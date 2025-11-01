@@ -12,11 +12,6 @@
         android:title="Tasks" />
 
     <item
-        android:id="@+id/nav_sms"
-        android:icon="@drawable/ic_sms"
-        android:title="SMS" />
-
-    <item
         android:id="@+id/nav_profile"
         android:icon="@drawable/ic_profile"
         android:title="Profile" />
