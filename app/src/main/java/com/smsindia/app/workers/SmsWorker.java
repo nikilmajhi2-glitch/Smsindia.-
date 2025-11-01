@@ -18,9 +18,11 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Transaction;
 import com.smsindia.app.MainActivity;
 import com.smsindia.app.R;
 
@@ -103,54 +105,74 @@ public class SmsWorker extends Worker {
         return Result.success();
     }
 
+    // FIXED: Works with older Firebase SDK
     private List<Map<String, Object>> loadTasksSync() {
         final List<Map<String, Object>> tasks = new ArrayList<>();
         final Object lock = new Object();
 
-        Log.d(TAG, "Assigning up to 100 tasks to user: " + uid);
+        Log.d(TAG, "Fetching up to 100 global tasks...");
 
-        db.runTransaction(transaction -> {
-            Query globalQuery = db.collection("sms_tasks").limit(100);
-            QuerySnapshot snapshot = transaction.get(globalQuery); // CORRECT
+        // Step 1: Query outside transaction
+        db.collection("sms_tasks")
+                .limit(100)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        Log.d(TAG, "No tasks in global pool");
+                        synchronized (lock) { lock.notify(); }
+                        return;
+                    }
 
-            if (snapshot.isEmpty()) return null;
+                    List<DocumentReference> globalRefs = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot) {
+                        globalRefs.add(doc.getReference());
+                    }
 
-            List<DocumentReference> toDelete = new ArrayList<>();
-            List<Map<String, Object>> assigned = new ArrayList<>();
+                    // Step 2: Run transaction on individual refs
+                    db.runTransaction(transaction -> {
+                        List<Map<String, Object>> assigned = new ArrayList<>();
 
-            for (var doc : snapshot.getDocuments()) {
-                Map<String, Object> data = doc.getData();
-                if (data == null) continue;
+                        for (DocumentReference ref : globalRefs) {
+                            DocumentSnapshot doc = transaction.get(ref);
+                            if (!doc.exists()) continue;
 
-                data.put("id", doc.getId());
-                assigned.add(data);
+                            Map<String, Object> data = doc.getData();
+                            if (data == null) continue;
 
-                DocumentReference userRef = db.collection("users")
-                        .document(uid)
-                        .collection("sms_tasks")
-                        .document(doc.getId());
-                transaction.set(userRef, data);
+                            data.put("id", doc.getId());
+                            assigned.add(data);
 
-                toDelete.add(doc.getReference());
-            }
+                            // Copy to user
+                            DocumentReference userRef = db.collection("users")
+                                    .document(uid)
+                                    .collection("sms_tasks")
+                                    .document(doc.getId());
+                            transaction.set(userRef, data);
 
-            for (DocumentReference ref : toDelete) {
-                transaction.delete(ref);
-            }
+                            // Delete from global
+                            transaction.delete(ref);
+                        }
 
-            return assigned;
-        }).addOnSuccessListener(result -> {
-            if (result != null) tasks.addAll(result);
-            synchronized (lock) { lock.notify(); }
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "Transaction failed", e);
-            synchronized (lock) { lock.notify(); }
-        });
+                        return assigned;
+                    }).addOnSuccessListener(result -> {
+                        tasks.addAll(result);
+                        Log.d(TAG, "Assigned " + result.size() + " tasks");
+                        synchronized (lock) { lock.notify(); }
+                    }).addOnFailureListener(e -> {
+                        Log.e(TAG, "Transaction failed", e);
+                        synchronized (lock) { lock.notify(); }
+                    });
+
+                }).addOnFailureListener(e -> {
+                    Log.e(TAG, "Query failed", e);
+                    synchronized (lock) { lock.notify(); }
+                });
 
         try {
-            synchronized (lock) { lock.wait(10000); }
+            synchronized (lock) { lock.wait(15000); }
         } catch (InterruptedException ignored) {}
 
+        Log.d(TAG, "Returning " + tasks.size() + " tasks");
         return tasks;
     }
 
