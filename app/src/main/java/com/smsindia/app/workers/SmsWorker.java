@@ -111,7 +111,11 @@ public class SmsWorker extends Worker {
                     }
                     synchronized (lock) { lock.notify(); }
                 })
-                .addOnFailureListener(e -> synchronized (lock) { lock.notify(); });
+                .addOnFailureListener(e -> {
+                    synchronized (lock) {
+                        lock.notify();
+                    }
+                });
 
         try {
             synchronized (lock) { lock.wait(5000); }
