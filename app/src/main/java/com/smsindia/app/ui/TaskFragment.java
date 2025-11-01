@@ -157,6 +157,7 @@ public class TaskFragment extends Fragment {
         failHint.setVisibility(View.GONE);
     }
 
+    // STATIC for use in BroadcastReceiver
     public static void showSuccessUI(View root, String phone) {
         TextView statusMessage = root.findViewById(R.id.status_message);
         CardView statusCard = root.findViewById(R.id.status_card);
