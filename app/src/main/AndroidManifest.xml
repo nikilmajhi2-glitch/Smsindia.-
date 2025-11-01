@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- ⚙️ SDK versions -->
+    <!-- ⚙️ Minimum and target SDK -->
     <uses-sdk
         android:minSdkVersion="24"
         android:targetSdkVersion="35" />
@@ -22,7 +22,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- 🧩 Internal broadcast permission -->
+    <!-- 🧩 App internal broadcast protection -->
     <permission
         android:name="com.smsindia.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
@@ -39,9 +39,9 @@
         android:theme="@style/Theme.SMSIndia.NoActionBar"
         tools:targetApi="35">
 
-        <!-- 🚀 OTP-based login first -->
+        <!-- 🚀 Device-based Login/Registration first -->
         <activity
-            android:name=".OtpLoginActivity"
+            android:name=".LoginActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/Theme.SMSIndia.NoActionBar">
@@ -51,7 +51,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 📱 Main screen after login -->
+        <!-- 📱 Main Dashboard -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -63,7 +63,7 @@
             android:exported="true"
             android:label="Delivery Logs" />
 
-        <!-- ⚙️ SMS Foreground Service -->
+        <!-- ⚙️ Foreground SMS Service -->
         <service
             android:name=".service.SmsForegroundService"
             android:exported="false"
