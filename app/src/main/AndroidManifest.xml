@@ -56,17 +56,7 @@
             android:exported="false"
             android:label="Delivery Logs" />
 
-        <!-- FOREGROUND SERVICE - FIXED -->
-        <service
-            android:name=".service.SmsForegroundService"
-            android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="sms" />
-        </service>
-
-        <!-- FIREBASE MESSAGING -->
+      <!-- FIREBASE MESSAGING -->
         <service
             android:name=".service.MyFirebaseMessagingService"
             android:exported="false">
