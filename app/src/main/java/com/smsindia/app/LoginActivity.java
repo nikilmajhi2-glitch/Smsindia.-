@@ -1,10 +1,11 @@
 package com.smsindia.app;
 
 import android.content.Intent;
-import android.content.SharedPreferences;  // ← ADD THIS
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -70,8 +71,6 @@ public class LoginActivity extends AppCompatActivity {
                             "This account is linked to another device. Login denied.",
                             Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
-
                     // SAVE LOGIN STATE
                     SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
                     prefs.edit()
@@ -79,8 +78,11 @@ public class LoginActivity extends AppCompatActivity {
                         .putString("deviceId", deviceId)
                         .apply();
 
-                    startActivity(new Intent(this, MainActivity.class));
-                    finish();
+                    // SHOW LOADING + GO TO MAIN
+                    showLoadingAndProceed("Logging you in...", () -> {
+                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                        finish();
+                    });
                 }
             } else {
                 Toast.makeText(this, "Incorrect password", Toast.LENGTH_SHORT).show();
@@ -127,10 +129,6 @@ public class LoginActivity extends AppCompatActivity {
 
                                 db.collection("users").document(phone).set(user)
                                         .addOnSuccessListener(unused -> {
-                                            Toast.makeText(this,
-                                                    "Registered successfully!",
-                                                    Toast.LENGTH_SHORT).show();
-
                                             // SAVE REGISTRATION STATE
                                             SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
                                             prefs.edit()
@@ -138,8 +136,11 @@ public class LoginActivity extends AppCompatActivity {
                                                 .putString("deviceId", deviceId)
                                                 .apply();
 
-                                            startActivity(new Intent(this, MainActivity.class));
-                                            finish();
+                                            // SHOW LOADING + GO TO MAIN
+                                            showLoadingAndProceed("Creating your account...", () -> {
+                                                startActivity(new Intent(LoginActivity.this, MainActivity.class));
+                                                finish();
+                                            });
                                         })
                                         .addOnFailureListener(e ->
                                                 Toast.makeText(this,
@@ -147,5 +148,23 @@ public class LoginActivity extends AppCompatActivity {
                                                         Toast.LENGTH_SHORT).show());
                             });
                 });
+    }
+
+    // LOADING DIALOG WITH ANIMATION
+    private void showLoadingAndProceed(String message, Runnable onComplete) {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_loading, null);
+        TextView tvMessage = dialogView.findViewById(R.id.tv_loading_message);
+        tvMessage.setText(message);
+        builder.setView(dialogView);
+        builder.setCancelable(false);
+
+        android.app.AlertDialog dialog = builder.create();
+        dialog.show();
+
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+            dialog.dismiss();
+            onComplete.run();
+        }, 1500); // 1.5 seconds
     }
 }

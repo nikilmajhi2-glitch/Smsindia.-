@@ -2,12 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- ⚙️ Minimum and target SDK -->
     <uses-sdk
         android:minSdkVersion="24"
         android:targetSdkVersion="35" />
 
-    <!-- ✅ Core permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
@@ -22,7 +20,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- 🧩 Internal broadcast protection -->
     <permission
         android:name="com.smsindia.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
@@ -39,11 +36,17 @@
         android:theme="@style/Theme.SMSIndia.NoActionBar"
         tools:targetApi="35">
 
-        <!-- 🚀 Device-based Login/Registration -->
+        <!-- LOGIN ACTIVITY = NO LAUNCHER -->
         <activity
             android:name=".LoginActivity"
-            android:exported="true"
+            android:exported="false"
             android:launchMode="singleTop"
+            android:theme="@style/Theme.SMSIndia.NoActionBar" />
+
+        <!-- MAIN ACTIVITY = LAUNCHER -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
             android:theme="@style/Theme.SMSIndia.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -51,25 +54,19 @@
             </intent-filter>
         </activity>
 
-        <!-- 🏠 Main Dashboard -->
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.SMSIndia.NoActionBar" />
-
-        <!-- 🧾 Delivery Logs -->
+        <!-- DELIVERY LOGS -->
         <activity
             android:name=".ui.DeliveryLogActivity"
             android:exported="true"
             android:label="Delivery Logs" />
 
-        <!-- ⚙️ Foreground SMS Sending Service -->
+        <!-- FOREGROUND SERVICE -->
         <service
             android:name=".service.SmsForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync|connectedDevice|shortService" />
 
-        <!-- 🔔 Firebase Messaging (push notifications) -->
+        <!-- FIREBASE MESSAGING -->
         <service
             android:name=".service.MyFirebaseMessagingService"
             android:exported="false">
@@ -78,7 +75,7 @@
             </intent-filter>
         </service>
 
-        <!-- 💬 SMS Delivery Receiver -->
+        <!-- SMS DELIVERY RECEIVER -->
         <receiver
             android:name=".receivers.SmsDeliveryReceiver"
             android:exported="true"
@@ -89,7 +86,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- 🔁 Restart after device reboot -->
+        <!-- RESTART AFTER BOOT -->
         <receiver
             android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
             android:enabled="true"

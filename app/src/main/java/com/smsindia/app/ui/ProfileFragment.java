@@ -1,5 +1,6 @@
 package com.smsindia.app.ui;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -7,20 +8,13 @@ import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.smsindia.app.R;
 
 public class ProfileFragment extends Fragment {
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_profile, container, false);
 
@@ -29,18 +23,18 @@ public class ProfileFragment extends Fragment {
         webSettings.setJavaScriptEnabled(true);
         webView.setWebViewClient(new WebViewClient());
 
-        // ✅ Get currently logged-in user
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        // READ SAVED PHONE FROM LoginActivity
+        SharedPreferences prefs = requireActivity().getSharedPreferences("SMSINDIA_USER", 0);
+        String phone = prefs.getString("mobile", null);
 
-        if (user != null) {
-            String uid = user.getUid();
-            // Pass UID to your profile page
-            String profileUrl = "https://profile-phi-roan.vercel.app/?uid=" + uid;
+        if (phone != null) {
+            // USE PHONE AS UID (same as your web: ?uid=9876543210)
+            String profileUrl = "https://profile-phi-roan.vercel.app/?uid=" + phone;
             webView.loadUrl(profileUrl);
         } else {
-            // Fallback message
+            // Should NOT happen if LoginActivity saved data
             webView.loadData(
-                "<h3 style='text-align:center;color:red;'>Please log in first.</h3>",
+                "<h3 style='text-align:center;color:red;'>Session expired. Please log in again.</h3>",
                 "text/html", "UTF-8"
             );
         }
