@@ -1,7 +1,9 @@
 package com.smsindia.app.ui;
 
 import android.Manifest;
+import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.telephony.SmsManager;
@@ -26,7 +28,6 @@ import com.smsindia.app.R;
 public class TaskFragment extends Fragment {
 
     private static final int SMS_PERMISSION_CODE = 1001;
-
     private Button fetchNextBtn, sendSingleBtn, viewLogsBtn;
     private TextView tvFetchNumber, tvFetchMessage, tvStatus, tvSentCount, tvDebug;
     private ProgressBar progressBar;
@@ -95,18 +96,31 @@ public class TaskFragment extends Fragment {
             return;
         }
         try {
-            SmsManager sms = SmsManager.getDefault();
-            sms.sendTextMessage(curPhone, null, curMessage, null, null);
-            Toast.makeText(requireContext(), "SMS sent!", Toast.LENGTH_SHORT).show();
-            tvDebug.setText("Debug: SMS sent to " + curPhone);
+            // Get user id/mobile from SharedPreferences
+            SharedPreferences prefs = requireActivity().getSharedPreferences("SMSINDIA_USER", 0);
+            String userId = prefs.getString("mobile", "");
 
-            // Delete task from Firestore
-            if (curDocId != null) {
-                FirebaseFirestore.getInstance()
-                    .collection("sms_tasks")
-                    .document(curDocId).delete();
-                tvDebug.setText(tvDebug.getText() + " | Task deleted");
-            }
+            // DELIVERY INTENT for SmsDeliveryReceiver
+            Intent delivered = new Intent("com.smsindia.SMS_DELIVERED");
+            delivered.setClass(requireContext(), com.smsindia.app.receivers.SmsDeliveryReceiver.class);
+            delivered.putExtra("userId", userId); // mobile
+            delivered.putExtra("docId", curDocId);
+            delivered.putExtra("phone", curPhone);
+
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(
+                requireContext(),
+                curDocId != null ? curDocId.hashCode() : 0,
+                delivered,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            SmsManager sms = SmsManager.getDefault();
+            sms.sendTextMessage(curPhone, null, curMessage, null, deliveredPI);
+
+            Toast.makeText(requireContext(), "SMS send triggered!", Toast.LENGTH_SHORT).show();
+            tvDebug.setText("Debug: SMS send triggered, waiting for delivery...");
+
+            // Do NOT update balance or delete task here - receiver will handle!
 
             // Clear UI for next fetch
             tvFetchNumber.setText("Number: ");
