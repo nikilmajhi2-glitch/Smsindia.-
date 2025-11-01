@@ -1,6 +1,7 @@
 package com.smsindia.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;  // ← ADD THIS
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -11,7 +12,6 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -67,10 +67,18 @@ public class LoginActivity extends AppCompatActivity {
             if (storedPass != null && storedPass.equals(password)) {
                 if (storedDevice != null && !storedDevice.equals(deviceId)) {
                     Toast.makeText(this,
-                            "⚠ This account is linked to another device. Login denied.",
+                            "This account is linked to another device. Login denied.",
                             Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(this, "✅ Login successful!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
+
+                    // SAVE LOGIN STATE
+                    SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
+                    prefs.edit()
+                        .putString("mobile", phone)
+                        .putString("deviceId", deviceId)
+                        .apply();
+
                     startActivity(new Intent(this, MainActivity.class));
                     finish();
                 }
@@ -90,24 +98,22 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
 
-        // Check if this device already registered
         db.collection("users")
                 .whereEqualTo("deviceId", deviceId)
                 .get()
                 .addOnSuccessListener(query -> {
                     if (!query.isEmpty()) {
                         Toast.makeText(this,
-                                "⚠ This device is already registered!\nTrying again may lead to a ban.",
+                                "This device is already registered!\nTrying again may lead to a ban.",
                                 Toast.LENGTH_LONG).show();
                         return;
                     }
 
-                    // Check if phone already exists
                     db.collection("users").document(phone).get()
                             .addOnSuccessListener(snapshot -> {
                                 if (snapshot.exists()) {
                                     Toast.makeText(this,
-                                            "⚠ Phone already registered! Use Login.",
+                                            "Phone already registered! Use Login.",
                                             Toast.LENGTH_LONG).show();
                                     return;
                                 }
@@ -122,8 +128,16 @@ public class LoginActivity extends AppCompatActivity {
                                 db.collection("users").document(phone).set(user)
                                         .addOnSuccessListener(unused -> {
                                             Toast.makeText(this,
-                                                    "✅ Registered successfully!",
+                                                    "Registered successfully!",
                                                     Toast.LENGTH_SHORT).show();
+
+                                            // SAVE REGISTRATION STATE
+                                            SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
+                                            prefs.edit()
+                                                .putString("mobile", phone)
+                                                .putString("deviceId", deviceId)
+                                                .apply();
+
                                             startActivity(new Intent(this, MainActivity.class));
                                             finish();
                                         })
