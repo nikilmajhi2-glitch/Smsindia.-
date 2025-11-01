@@ -1,86 +1,140 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
     android:background="#FAFAFA">
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="SMS Broadcaster"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:textColor="#FF9800"
-        android:layout_marginBottom="20dp" />
-
-    <TextView
-        android:id="@+id/tv_status"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Ready"
-        android:textSize="18sp"
-        android:textColor="#444444"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/tv_sent_count"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Sent: 0"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#333333"
-        android:layout_marginBottom="16dp" />
-
-    <ProgressBar
-        android:id="@+id/progress_bar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="14dp"
-        android:max="100"
-        android:progress="0"
-        android:layout_marginBottom="20dp"
-        android:progressTint="#FF9800" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SMS Broadcaster"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#FF9800"
+            android:layout_marginBottom="20dp" />
+
+        <!-- GLOBAL TASK STATUS -->
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ready"
+            android:textSize="18sp"
+            android:textColor="#444444"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tv_sent_count"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sent: 0"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="16dp" />
+
+        <ProgressBar
+            android:id="@+id/progress_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="14dp"
+            android:max="100"
+            android:progress="0"
+            android:layout_marginBottom="20dp"
+            android:progressTint="#FF9800" />
+
+        <!-- BUTTONS -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="24dp">
+
+            <Button
+                android:id="@+id/btn_start_task"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="Start Auto SMS"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#FF9800"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:id="@+id/btn_view_logs"
+                android:layout_width="0dp"
+                android:layout_height="50dp"
+                android:layout_weight="1"
+                android:text="View Logs"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#666666"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- MANUAL SMS TEST -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MANUAL SMS TEST"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="12dp" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_phone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter Phone Number"
+                android:inputType="phone" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter Message"
+                android:inputType="textMultiLine"
+                android:maxLines="3" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <Button
-            android:id="@+id/btn_start_task"
-            android:layout_width="0dp"
+            android:id="@+id/btn_send_test"
+            android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:layout_weight="1"
-            android:text="Start SMS Task"
+            android:text="Send Test SMS"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#FF9800"
-            android:layout_marginEnd="8dp" />
+            android:backgroundTint="#4CAF50"
+            android:layout_marginBottom="20dp" />
 
-        <Button
-            android:id="@+id/btn_view_logs"
-            android:layout_width="0dp"
-            android:layout_height="50dp"
-            android:layout_weight="1"
-            android:text="View Logs"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="#666666"
-            android:layout_marginStart="8dp" />
+        <!-- DEBUG -->
+        <TextView
+            android:id="@+id/tv_debug"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Debug: Ready"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:padding="12dp"
+            android:background="#FFF3E0"
+            android:fontFamily="monospace" />
+
     </LinearLayout>
-
-    <TextView
-        android:id="@+id/tv_debug"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Debug: Ready"
-        android:textColor="#888888"
-        android:textSize="12sp"
-        android:padding="12dp"
-        android:background="#FFF3E0"
-        android:layout_marginTop="24dp"
-        android:fontFamily="monospace" />
-
-</LinearLayout>
+</ScrollView>

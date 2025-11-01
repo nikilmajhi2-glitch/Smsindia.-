@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.telephony.SmsManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,7 @@ import androidx.work.OutOfQuotaPolicy;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
+import com.google.android.material.textfield.TextInputEditText;
 import com.smsindia.app.R;
 import com.smsindia.app.workers.SmsWorker;
 
@@ -34,9 +36,10 @@ public class TaskFragment extends Fragment {
     private static final int SMS_PERMISSION_CODE = 1001;
     private static final String WORK_NAME = "sms_task";
 
-    private Button startBtn, viewLogsBtn;
+    private Button startBtn, viewLogsBtn, sendTestBtn;
     private TextView tvStatus, tvSentCount, tvDebug;
     private ProgressBar progressBar;
+    private TextInputEditText etPhone, etMessage;
 
     private boolean isRunning = false;
     private UUID currentWorkId = null;
@@ -49,18 +52,48 @@ public class TaskFragment extends Fragment {
 
         startBtn = v.findViewById(R.id.btn_start_task);
         viewLogsBtn = v.findViewById(R.id.btn_view_logs);
+        sendTestBtn = v.findViewById(R.id.btn_send_test);
         tvStatus = v.findViewById(R.id.tv_status);
         tvSentCount = v.findViewById(R.id.tv_sent_count);
         progressBar = v.findViewById(R.id.progress_bar);
         tvDebug = v.findViewById(R.id.tv_debug);
+        etPhone = v.findViewById(R.id.et_phone);
+        etMessage = v.findViewById(R.id.et_message);
 
         checkAndRequestSmsPermissions();
 
         startBtn.setOnClickListener(view -> toggleTask());
-        viewLogsBtn.setOnClickListener(v1 ->
-                startActivity(new Intent(requireContext(), DeliveryLogActivity.class)));
+        viewLogsBtn.setOnClickListener(v1 -> startActivity(new Intent(requireContext(), DeliveryLogActivity.class)));
+
+        sendTestBtn.setOnClickListener(v -> sendManualSms());
 
         return v;
+    }
+
+    private void sendManualSms() {
+        String phone = etPhone.getText().toString().trim();
+        String msg = etMessage.getText().toString().trim();
+
+        if (phone.isEmpty() || msg.isEmpty()) {
+            Toast.makeText(requireContext(), "Fill both fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (!hasSmsPermissions()) {
+            Toast.makeText(requireContext(), "SMS permission missing", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        tvDebug.setText("Debug: Sending test SMS...");
+        try {
+            SmsManager sms = SmsManager.getDefault();
+            sms.sendTextMessage(phone, null, msg, null, null);
+            tvDebug.setText("Debug: Test SMS sent to " + phone);
+            Toast.makeText(requireContext(), "Test SMS sent!", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            tvDebug.setText("Debug: SMS FAILED -> " + e.getMessage());
+            Toast.makeText(requireContext(), "SMS failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void toggleTask() {
@@ -89,7 +122,7 @@ public class TaskFragment extends Fragment {
         startBtn.setText("Stop Task");
         tvStatus.setText("Loading tasks...");
         tvSentCount.setText("Sent: 0");
-        tvDebug.setText("Debug: Loading...");
+        tvDebug.setText("Debug: Loading global tasks...");
 
         OneTimeWorkRequest work = new OneTimeWorkRequest.Builder(SmsWorker.class)
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
@@ -120,25 +153,19 @@ public class TaskFragment extends Fragment {
                     if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
                         if (total == 0) {
                             tvStatus.setText("No tasks");
-                            tvDebug.setText("Debug: Empty task list");
+                            tvDebug.setText("Debug: No tasks in Firestore");
                         } else {
                             tvStatus.setText("Completed!");
-                            tvDebug.setText("Debug: Sent " + total + " messages");
+                            tvDebug.setText("Debug: Sent " + total);
                         }
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.FAILED) {
                         String err = workInfo.getOutputData().getString("error");
                         tvStatus.setText("Failed");
-                        tvDebug.setText("Debug: " + (err != null ? err : "Unknown error"));
-                        resetUI();
-                    } else if (workInfo.getState() == WorkInfo.State.CANCELLED) {
-                        tvStatus.setText("Stopped");
-                        tvDebug.setText("Debug: Cancelled");
+                        tvDebug.setText("Debug: " + (err != null ? err : "Unknown"));
                         resetUI();
                     }
                 });
-
-        Toast.makeText(requireContext(), "Started!", Toast.LENGTH_LONG).show();
     }
 
     private void stopTask() {
@@ -153,7 +180,7 @@ public class TaskFragment extends Fragment {
     private void resetUI() {
         isRunning = false;
         progressBar.setIndeterminate(false);
-        startBtn.setText("Start SMS Task");
+        startBtn.setText("Start Auto SMS");
     }
 
     private void checkAndRequestSmsPermissions() {
