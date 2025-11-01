@@ -18,23 +18,29 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.Observer;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.OutOfQuotaPolicy;
+import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 
 import com.smsindia.app.R;
 import com.smsindia.app.workers.SmsWorker;
 
+import java.util.UUID;
+
 public class TaskFragment extends Fragment {
 
     private static final int SMS_PERMISSION_CODE = 1001;
+    private static final String WORK_NAME = "sms_task";
 
     private Button startBtn, viewLogsBtn;
     private TextView tvStatus, tvSentCount;
     private ProgressBar progressBar;
 
     private boolean isRunning = false;
+    private UUID currentWorkId = null;
 
     @Nullable
     @Override
@@ -81,11 +87,10 @@ public class TaskFragment extends Fragment {
         isRunning = true;
         progressBar.setIndeterminate(true);
         startBtn.setText("Stop Task");
-        tvStatus.setText("Task running... Sending messages...");
+        tvStatus.setText("Assigning tasks...");
         tvStatus.setTextColor(getResources().getColor(R.color.orange_700));
         tvSentCount.setText("Sent: 0");
 
-        // START WORKER (NOT SERVICE)
         OneTimeWorkRequest work = new OneTimeWorkRequest.Builder(SmsWorker.class)
                 .setInputData(new androidx.work.Data.Builder()
                         .putString("userId", phone)
@@ -93,21 +98,60 @@ public class TaskFragment extends Fragment {
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build();
 
+        currentWorkId = work.getId();
+
         WorkManager.getInstance(requireContext())
-                .enqueueUniqueWork("sms_task", ExistingWorkPolicy.REPLACE, work);
+                .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, work);
+
+        // Observe progress and state
+        WorkManager.getInstance(requireContext())
+                .getWorkInfoByIdLiveData(currentWorkId)
+                .observe(getViewLifecycleOwner(), workInfo -> {
+                    if (workInfo == null) return;
+
+                    // Update progress
+                    androidx.work.Data progress = workInfo.getProgress();
+                    int sent = progress.getInt("sent", 핵);
+                    int total = progress.getInt("total", 0);
+                    if (total > 0) {
+                        tvSentCount.setText("Sent: " + sent + "/" + total);
+                        tvStatus.setText("Sending messages...");
+                        progressBar.setIndeterminate(false);
+                        progressBar.setMax(total);
+                        progressBar.setProgress(sent);
+                    }
+
+                    // Handle completion
+                    if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
+                        tvStatus.setText("Task completed");
+                        tvStatus.setTextColor(getResources().getColor(R.color.green));
+                        resetUI();
+                    } else if (workInfo.getState() == WorkInfo.State.FAILED) {
+                        tvStatus.setText("Task failed");
+                        tvStatus.setTextColor(getResources().getColor(R.color.red));
+                        resetUI();
+                    } else if (workInfo.getState() == WorkInfo.State.CANCELLED) {
+                        tvStatus.setText("Task cancelled");
+                        resetUI();
+                    }
+                });
 
         Toast.makeText(requireContext(), "SMS Task Started!", Toast.LENGTH_LONG).show();
     }
 
     private void stopTask() {
+        if (currentWorkId != null) {
+            WorkManager.getInstance(requireContext()).cancelWorkById(currentWorkId);
+        }
+        resetUI();
+        tvStatus.setText("Task stopped");
+        tvStatus.setTextColor(getResources().getColor(R.color.gray));
+    }
+
+    private void resetUI() {
         isRunning = false;
         progressBar.setIndeterminate(false);
         startBtn.setText("Start SMS Task");
-        tvStatus.setText("Task stopped");
-        tvStatus.setTextColor(getResources().getColor(R.color.gray));
-
-        // CANCEL WORKER
-        WorkManager.getInstance(requireContext()).cancelUniqueWork("sms_task");
     }
 
     private void checkAndRequestSmsPermissions() {
