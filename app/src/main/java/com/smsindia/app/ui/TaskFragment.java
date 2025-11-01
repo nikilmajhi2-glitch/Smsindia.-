@@ -5,8 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,9 +18,13 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.OutOfQuotaPolicy;
+import androidx.work.WorkManager;
 
 import com.smsindia.app.R;
-import com.smsindia.app.service.SmsForegroundService;
+import com.smsindia.app.workers.SmsWorker;
 
 public class TaskFragment extends Fragment {
 
@@ -33,7 +35,6 @@ public class TaskFragment extends Fragment {
     private ProgressBar progressBar;
 
     private boolean isRunning = false;
-    private Handler handler = new Handler(Looper.getMainLooper());
 
     @Nullable
     @Override
@@ -84,9 +85,16 @@ public class TaskFragment extends Fragment {
         tvStatus.setTextColor(getResources().getColor(R.color.orange_700));
         tvSentCount.setText("Sent: 0");
 
-        // START SERVICE ONCE — LET IT HANDLE LOOP
-        Intent intent = new Intent(requireContext(), SmsForegroundService.class);
-        requireContext().startForegroundService(intent);
+        // START WORKER (NOT SERVICE)
+        OneTimeWorkRequest work = new OneTimeWorkRequest.Builder(SmsWorker.class)
+                .setInputData(new androidx.work.Data.Builder()
+                        .putString("userId", phone)
+                        .build())
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .build();
+
+        WorkManager.getInstance(requireContext())
+                .enqueueUniqueWork("sms_task", ExistingWorkPolicy.REPLACE, work);
 
         Toast.makeText(requireContext(), "SMS Task Started!", Toast.LENGTH_LONG).show();
     }
@@ -98,9 +106,8 @@ public class TaskFragment extends Fragment {
         tvStatus.setText("Task stopped");
         tvStatus.setTextColor(getResources().getColor(R.color.gray));
 
-        // Optional: Stop service via intent
-        Intent intent = new Intent(requireContext(), SmsForegroundService.class);
-        requireContext().stopService(intent);
+        // CANCEL WORKER
+        WorkManager.getInstance(requireContext()).cancelUniqueWork("sms_task");
     }
 
     private void checkAndRequestSmsPermissions() {
