@@ -95,14 +95,21 @@ public class TaskFragment extends Fragment {
     }
 
     private void sendCurrentTask() {
+        // Disable button immediately to prevent rapid re-clicks
+        sendSingleBtn.setEnabled(false);
+
         if (curPhone == null || curMessage == null) {
             statusMessage.setText("No task loaded. Please fetch next.");
             statusCard.setCardBackgroundColor(Color.parseColor("#FFECB3"));
+            // Ensure button is re-enabled for user to try again
+            sendSingleBtn.setEnabled(true);
             return;
         }
         if (!hasSmsPermissions()) {
             statusMessage.setText("SMS permission missing. Please grant and retry.");
             statusCard.setCardBackgroundColor(Color.parseColor("#FFCDD2"));
+            // Ensure button is re-enabled for user to try again
+            sendSingleBtn.setEnabled(true);
             return;
         }
 
@@ -133,10 +140,11 @@ public class TaskFragment extends Fragment {
 
             statusMessage.setText("Sending SMS...");
             sendingProgress.setVisibility(View.VISIBLE);
-            sendSingleBtn.setEnabled(false);
+            // Button remains disabled until delivery response
         } catch (Exception e) {
-            // FIXED: pass in the required arguments for showFailUI
             showFailUI(getView(), curPhone != null ? curPhone : "Unknown", failCount++ > 0);
+            // Re-enable send button here in case of failure
+            sendSingleBtn.setEnabled(true);
         }
     }
 
@@ -189,18 +197,18 @@ public class TaskFragment extends Fragment {
             failHint.setVisibility(View.VISIBLE);
         }
     }
-    
+
     private void checkAndRequestSmsPermissions() {
         if (!hasSmsPermissions()) {
             ActivityCompat.requestPermissions(
-                    requireActivity(),
-                    new String[]{
-                            Manifest.permission.SEND_SMS,
-                            Manifest.permission.READ_SMS,
-                            Manifest.permission.RECEIVE_SMS,
-                            Manifest.permission.POST_NOTIFICATIONS
-                    },
-                    SMS_PERMISSION_CODE
+                requireActivity(),
+                new String[]{
+                    Manifest.permission.SEND_SMS,
+                    Manifest.permission.READ_SMS,
+                    Manifest.permission.RECEIVE_SMS,
+                    Manifest.permission.POST_NOTIFICATIONS
+                },
+                SMS_PERMISSION_CODE
             );
         }
     }
