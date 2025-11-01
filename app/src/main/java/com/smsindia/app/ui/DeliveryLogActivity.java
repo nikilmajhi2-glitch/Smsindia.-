@@ -1,6 +1,6 @@
 package com.smsindia.app.ui;
 
-import android.content sharedPreferences;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -26,7 +26,6 @@ public class DeliveryLogActivity extends AppCompatActivity {
         logsContainer = findViewById(R.id.logs_container);
         db = FirebaseFirestore.getInstance();
 
-        // GET UID FROM SharedPreferences (NOT FirebaseAuth)
         SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
         uid = prefs.getString("mobile", "");
 
