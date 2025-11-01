@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,7 +33,6 @@ public class TaskFragment extends Fragment {
 
     private static final int SMS_PERMISSION_CODE = 1001;
     private static final String WORK_NAME = "sms_task";
-    private static final String TAG = "TaskFragment";
 
     private Button startBtn, viewLogsBtn;
     private TextView tvStatus, tvSentCount, tvDebug;
@@ -89,72 +87,58 @@ public class TaskFragment extends Fragment {
         isRunning = true;
         progressBar.setIndeterminate(true);
         startBtn.setText("Stop Task");
-        tvStatus.setText("Assigning tasks...");
-        tvStatus.setTextColor(getResources().getColor(R.color.orange_700));
+        tvStatus.setText("Loading tasks...");
         tvSentCount.setText("Sent: 0");
-        tvDebug.setText("Debug: Initializing...");
+        tvDebug.setText("Debug: Loading...");
 
         OneTimeWorkRequest work = new OneTimeWorkRequest.Builder(SmsWorker.class)
-                .setInputData(new androidx.work.Data.Builder()
-                        .putString("userId", phone)
-                        .build())
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build();
 
         currentWorkId = work.getId();
-
         WorkManager.getInstance(requireContext())
                 .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, work);
 
         WorkManager.getInstance(requireContext())
                 .getWorkInfoByIdLiveData(currentWorkId)
                 .observe(getViewLifecycleOwner(), workInfo -> {
-                    if (workInfo == null) {
-                        tvDebug.setText("Debug: workInfo null");
-                        return;
-                    }
+                    if (workInfo == null) return;
 
-                    androidx.work.Data progress = workInfo.getProgress();
+                    var progress = workInfo.getProgress();
                     int sent = progress.getInt("sent", 0);
                     int total = progress.getInt("total", 0);
 
                     if (total > 0) {
                         tvSentCount.setText("Sent: " + sent + "/" + total);
-                        tvStatus.setText("Sending messages...");
+                        tvStatus.setText("Sending...");
                         progressBar.setIndeterminate(false);
                         progressBar.setMax(total);
                         progressBar.setProgress(sent);
                         tvDebug.setText("Debug: Sending " + sent + "/" + total);
-                    } else {
-                        tvDebug.setText("Debug: Waiting for tasks...");
                     }
 
                     if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
                         if (total == 0) {
-                            tvStatus.setText("No tasks available");
-                            tvStatus.setTextColor(getResources().getColor(android.R.color.darker_gray));
-                            tvDebug.setText("Debug: No tasks in global pool");
+                            tvStatus.setText("No tasks");
+                            tvDebug.setText("Debug: Empty task list");
                         } else {
-                            tvStatus.setText("Task completed");
-                            tvStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
-                            tvDebug.setText("Debug: Success! Sent " + total);
+                            tvStatus.setText("Completed!");
+                            tvDebug.setText("Debug: Sent " + total + " messages");
                         }
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.FAILED) {
-                        String error = workInfo.getOutputData().getString("error");
-                        String msg = error != null ? error : "Unknown error (check Logcat)";
-                        tvStatus.setText("Task failed");
-                        tvStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-                        tvDebug.setText("Debug: FAILED -> " + msg);
+                        String err = workInfo.getOutputData().getString("error");
+                        tvStatus.setText("Failed");
+                        tvDebug.setText("Debug: " + (err != null ? err : "Unknown error"));
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.CANCELLED) {
-                        tvStatus.setText("Task cancelled");
-                        tvDebug.setText("Debug: Cancelled by user");
+                        tvStatus.setText("Stopped");
+                        tvDebug.setText("Debug: Cancelled");
                         resetUI();
                     }
                 });
 
-        Toast.makeText(requireContext(), "SMS Task Started!", Toast.LENGTH_LONG).show();
+        Toast.makeText(requireContext(), "Started!", Toast.LENGTH_LONG).show();
     }
 
     private void stopTask() {
@@ -162,8 +146,7 @@ public class TaskFragment extends Fragment {
             WorkManager.getInstance(requireContext()).cancelWorkById(currentWorkId);
         }
         resetUI();
-        tvStatus.setText("Task stopped");
-        tvStatus.setTextColor(getResources().getColor(android.R.color.darker_gray));
+        tvStatus.setText("Stopped");
         tvDebug.setText("Debug: Stopped");
     }
 
@@ -203,7 +186,7 @@ public class TaskFragment extends Fragment {
             for (int res : grantResults)
                 if (res != PackageManager.PERMISSION_GRANTED) granted = false;
             Toast.makeText(getContext(),
-                    granted ? "SMS permissions granted" : "Please allow all permissions",
+                    granted ? "Permissions OK" : "Allow all permissions",
                     Toast.LENGTH_LONG).show();
         }
     }
