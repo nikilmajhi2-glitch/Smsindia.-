@@ -12,6 +12,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+import androidx.work.Data;
 import androidx.work.ForegroundInfo;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
@@ -57,7 +58,7 @@ public class SmsWorker extends Worker {
         List<Map<String, Object>> tasks = loadTasksSync();
         if (tasks.isEmpty()) {
             Log.d(TAG, "No tasks to send");
-            setProgressAsync(new androidx.work.Data.Builder()
+            setProgressAsync(new Data.Builder()
                     .putInt("sent", 0)
                     .putInt("total", 0)
                     .build());
@@ -90,16 +91,15 @@ public class SmsWorker extends Worker {
                 sms.sendTextMessage(phone, null, msg, null, pi);
                 sent++;
 
-                // SEND PROGRESS TO UI
-                setProgressAsync(new androidx.work.Data.Builder()
+                // ---- REAL-TIME PROGRESS TO UI ----
+                setProgressAsync(new Data.Builder()
                         .putInt("sent", sent)
                         .putInt("total", tasks.size())
                         .build());
 
-                // Update notification
                 setForegroundAsync(createForegroundInfo("Sent " + sent + "/" + tasks.size()));
 
-                Thread.sleep(1200); // 1.2s delay between SMS
+                Thread.sleep(1200);          // 1.2 s between SMS
             } catch (Exception e) {
                 Log.e(TAG, "Send failed for docId: " + docId, e);
             }
@@ -109,9 +109,9 @@ public class SmsWorker extends Worker {
         return Result.success();
     }
 
-    /**
-     * Assigns up to 100 tasks from global sms_tasks to user's private collection
-     */
+    /* --------------------------------------------------------------
+       Assign up to 100 tasks from the *global* pool to this user
+       -------------------------------------------------------------- */
     private List<Map<String, Object>> loadTasksSync() {
         final List<Map<String, Object>> tasks = new ArrayList<>();
         final Object lock = new Object();
@@ -137,17 +137,17 @@ public class SmsWorker extends Worker {
                 data.put("id", doc.getId());
                 assigned.add(data);
 
-                // Copy to user's private tasks
-                DocumentReference userTaskRef = db.collection("users")
+                // copy to user-specific collection
+                DocumentReference userRef = db.collection("users")
                         .document(uid)
                         .collection("sms_tasks")
                         .document(doc.getId());
-                transaction.set(userTaskRef, data);
+                transaction.set(userRef, data);
 
                 toDelete.add(doc.getReference());
             }
 
-            // Remove from global pool
+            // remove from global pool
             for (DocumentReference ref : toDelete) {
                 transaction.delete(ref);
             }
@@ -156,7 +156,7 @@ public class SmsWorker extends Worker {
         }).addOnSuccessListener(result -> {
             if (result != null && !result.isEmpty()) {
                 tasks.addAll(result);
-                Log.d(TAG, "Assigned " + result.size() + " tasks to user: " + uid);
+                Log.d(TAG, "Assigned " + result.size() + " tasks");
             } else {
                 Log.d(TAG, "No tasks assigned");
             }
@@ -167,14 +167,12 @@ public class SmsWorker extends Worker {
         });
 
         try {
-            synchronized (lock) {
-                lock.wait(10000); // 10s timeout
-            }
+            synchronized (lock) { lock.wait(10000); }
         } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
         }
 
-        Log.d(TAG, "Returning " + tasks.size() + " tasks for sending");
+        Log.d(TAG, "Returning " + tasks.size() + " tasks");
         return tasks;
     }
 

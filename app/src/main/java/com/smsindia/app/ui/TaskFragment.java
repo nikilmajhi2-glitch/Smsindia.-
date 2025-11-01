@@ -87,7 +87,7 @@ public class TaskFragment extends Fragment {
         isRunning = true;
         progressBar.setIndeterminate(true);
         startBtn.setText("Stop Task");
-        tvStatus.setText("Assigning tasks...");
+        tvStatus.setText("Assigning tasks…");
         tvStatus.setTextColor(getResources().getColor(R.color.orange_700));
         tvSentCount.setText("Sent: 0");
 
@@ -103,32 +103,32 @@ public class TaskFragment extends Fragment {
         WorkManager.getInstance(requireContext())
                 .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, work);
 
-        // Observe progress and state
+        // ---------- OBSERVE PROGRESS ----------
         WorkManager.getInstance(requireContext())
                 .getWorkInfoByIdLiveData(currentWorkId)
                 .observe(getViewLifecycleOwner(), workInfo -> {
                     if (workInfo == null) return;
 
-                    // Update progress
                     androidx.work.Data progress = workInfo.getProgress();
-                    int sent = progress.getInt("sent", 핵);
+                    int sent = progress.getInt("sent", 0);
                     int total = progress.getInt("total", 0);
+
                     if (total > 0) {
                         tvSentCount.setText("Sent: " + sent + "/" + total);
-                        tvStatus.setText("Sending messages...");
+                        tvStatus.setText("Sending messages…");
                         progressBar.setIndeterminate(false);
                         progressBar.setMax(total);
                         progressBar.setProgress(sent);
                     }
 
-                    // Handle completion
+                    // completion states
                     if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
                         tvStatus.setText("Task completed");
-                        tvStatus.setTextColor(getResources().getColor(R.color.green));
+                        tvStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.FAILED) {
                         tvStatus.setText("Task failed");
-                        tvStatus.setTextColor(getResources().getColor(R.color.red));
+                        tvStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.CANCELLED) {
                         tvStatus.setText("Task cancelled");
@@ -145,7 +145,7 @@ public class TaskFragment extends Fragment {
         }
         resetUI();
         tvStatus.setText("Task stopped");
-        tvStatus.setTextColor(getResources().getColor(R.color.gray));
+        tvStatus.setTextColor(getResources().getColor(android.R.color.darker_gray));
     }
 
     private void resetUI() {
