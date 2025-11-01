@@ -4,14 +4,12 @@
     android:gravity="center"
     android:padding="24dp"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/background_light">
+    android:layout_height="match_parent">
 
     <TextView
         android:id="@+id/tv_status"
         android:text="Ready to send..."
         android:textSize="16sp"
-        android:textColor="@color/orange_700"
         android:layout_marginBottom="10dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
@@ -20,7 +18,6 @@
         android:id="@+id/tv_recipient"
         android:text="Recipient: -"
         android:textSize="14sp"
-        android:textColor="@android:color/black"
         android:layout_marginBottom="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
@@ -29,7 +26,6 @@
         android:id="@+id/tv_message"
         android:text="Message: -"
         android:textSize="14sp"
-        android:textColor="@android:color/black"
         android:layout_marginBottom="8dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
@@ -40,33 +36,27 @@
         android:layout_width="200dp"
         android:layout_height="wrap_content"
         android:max="100"
-        android:progress="0"
-        android:progressTint="@color/orange_600" />
+        android:progress="0" />
 
     <TextView
         android:id="@+id/tv_progress"
         android:text="0 / 0"
         android:layout_marginTop="6dp"
         android:textSize="14sp"
-        android:textColor="@android:color/black"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <!-- View Delivery Stats Button -->
+    <!-- 📊 View Delivery Stats Button -->
     <Button
         android:id="@+id/btn_view_logs"
-        android:text="View Delivery Stats"
-        android:backgroundTint="@color/orange_400"
-        android:textColor="@android:color/white"
+        android:text="📊 View Delivery Stats"
         android:layout_marginTop="12dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/btn_start_task"
-        android:text="Start SMS Task"
-        android:backgroundTint="@color/orange_700"
-        android:textColor="@android:color/white"
+        android:text="▶ Start SMS Task"
         android:layout_marginTop="20dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />

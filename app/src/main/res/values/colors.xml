@@ -1,25 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    
     <!-- Primary brand colors -->
     <color name="md_theme_primary">#FF9800</color>
     <color name="md_theme_background">#FFFFFF</color>
-    
-    <!-- Keep your existing name (used elsewhere) -->
-    <color name="bg_light">#FAFAFA</color>
-    
-    <!-- Add alias for fragment_task.xml -->
-    <color name="background_light">@color/bg_light</color>
-    
-    <!-- Add missing orange shades (only used in fragment_task.xml) -->
-    <color name="orange_400">#FFB74D</color>
-    <color name="orange_600">#FB8C00</color>
     <color name="orange_700">#F57C00</color>
-    
-    <!-- Your extras -->
+    <color name="bg_light">#FAFAFA</color>
     <color name="white">#FFFFFF</color>
-    <color name="orange">#FF7A00</color>
-    <color name="gray">#808080</color>
+
+    <!-- New colors for navigation bar -->
+    <color name="orange">#FF7A00</color>  <!-- active tab color -->
+    <color name="gray">#808080</color>    <!-- inactive tab color -->
+
+    <!-- Optional subtle background tint -->
     <color name="nav_bg_light">#FFF5E6</color>
-    
 </resources>
