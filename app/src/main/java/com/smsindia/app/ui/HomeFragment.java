@@ -26,12 +26,10 @@ public class HomeFragment extends Fragment {
         webSettings.setUseWideViewPort(true);
         webView.setWebViewClient(new WebViewClient());
 
-        // READ SAVED PHONE FROM LoginActivity
         SharedPreferences prefs = requireActivity().getSharedPreferences("SMSINDIA_USER", 0);
-        String phone = prefs.getString("mobile", "");
+        String uid = prefs.getString("mobile", "");
 
-        // PASS PHONE AS UID (your web expects ?uid=9876543210)
-        String url = "https://smsindia-homepage.vercel.app/?uid=" + phone;
+        String url = "https://smsindia-homepage.vercel.app/?uid=" + uid;
         webView.loadUrl(url);
 
         return v;

@@ -23,16 +23,14 @@ public class ProfileFragment extends Fragment {
         webSettings.setJavaScriptEnabled(true);
         webView.setWebViewClient(new WebViewClient());
 
-        // READ SAVED PHONE FROM LoginActivity
+        // USE "" AS DEFAULT (NOT null)
         SharedPreferences prefs = requireActivity().getSharedPreferences("SMSINDIA_USER", 0);
-        String phone = prefs.getString("mobile", null);
+        String uid = prefs.getString("mobile", "");
 
-        if (phone != null) {
-            // USE PHONE AS UID (same as your web: ?uid=9876543210)
-            String profileUrl = "https://profile-phi-roan.vercel.app/?uid=" + phone;
+        if (!uid.isEmpty()) {
+            String profileUrl = "https://profile-phi-roan.vercel.app/?uid=" + uid;
             webView.loadUrl(profileUrl);
         } else {
-            // Should NOT happen if LoginActivity saved data
             webView.loadData(
                 "<h3 style='text-align:center;color:red;'>Session expired. Please log in again.</h3>",
                 "text/html", "UTF-8"
