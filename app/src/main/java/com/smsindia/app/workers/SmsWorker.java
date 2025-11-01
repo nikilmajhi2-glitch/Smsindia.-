@@ -53,11 +53,19 @@ public class SmsWorker extends Worker {
 
         setForegroundAsync(createForegroundInfo("Loading tasks..."));
 
-        List<Map<String, Object>> tasks = loadGlobalTasksSync();
+        List<Map<String, Object>> tasks;
+        try {
+            tasks = loadGlobalTasksSync();
+        } catch (Exception e) {
+            Log.e(TAG, "Firestore failed", e);
+            return Result.failure(new Data.Builder()
+                    .putString("error", "Firestore error: " + e.getMessage())
+                    .build());
+        }
 
         if (tasks.isEmpty()) {
             setProgressAsync(new Data.Builder().putInt("sent", 0).putInt("total", 0).build());
-            setForegroundAsync(createForegroundInfo("No tasks available"));
+            setForegroundAsync(createForegroundInfo("No tasks"));
             return Result.success();
         }
 
@@ -96,10 +104,6 @@ public class SmsWorker extends Worker {
                     setForegroundAsync(createForegroundInfo("Sent " + sent + "/" + tasks.size()));
 
                     Thread.sleep(1200);
-                } catch (SecurityException e) {
-                    return Result.failure(new Data.Builder()
-                            .putString("error", "SMS permission denied")
-                            .build());
                 } catch (Exception e) {
                     Log.e(TAG, "Send failed: " + docId, e);
                 }
@@ -108,22 +112,22 @@ public class SmsWorker extends Worker {
         } catch (Exception e) {
             Log.e(TAG, "Worker crashed", e);
             return Result.failure(new Data.Builder()
-                    .putString("error", "Send error: " + e.getMessage())
+                    .putString("error", "Send crash: " + e.getMessage())
                     .build());
         }
     }
 
-    // LOAD GLOBAL TASKS — NO LIMIT, NO ASSIGNMENT
-    private List<Map<String, Object>> loadGlobalTasksSync() {
+    private List<Map<String, Object>> loadGlobalTasksSync() throws Exception {
         final List<Map<String, Object>> tasks = new ArrayList<>();
         final Object lock = new Object();
+        final Exception[] error = {null};
 
-        Log.d(TAG, "Loading ALL global sms_tasks...");
+        Log.d(TAG, "Loading global sms_tasks...");
 
         db.collection("sms_tasks")
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    Log.d(TAG, "Found " + querySnapshot.size() + " global tasks");
+                    Log.d(TAG, "Found " + querySnapshot.size() + " tasks");
                     for (DocumentSnapshot doc : querySnapshot) {
                         Map<String, Object> data = doc.getData();
                         if (data != null) {
@@ -134,13 +138,16 @@ public class SmsWorker extends Worker {
                     synchronized (lock) { lock.notify(); }
                 })
                 .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to load tasks", e);
+                    Log.e(TAG, "Firestore query failed", e);
+                    error[0] = e;
                     synchronized (lock) { lock.notify(); }
                 });
 
-        try {
-            synchronized (lock) { lock.wait(10000); }
-        } catch (InterruptedException ignored) {}
+        synchronized (lock) { lock.wait(10000); }
+
+        if (error[0] != null) {
+            throw error[0];
+        }
 
         Log.d(TAG, "Returning " + tasks.size() + " tasks");
         return tasks;
