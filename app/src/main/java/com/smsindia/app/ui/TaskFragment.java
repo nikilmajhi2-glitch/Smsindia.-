@@ -65,7 +65,7 @@ public class TaskFragment extends Fragment {
         startBtn.setOnClickListener(view -> toggleTask());
         viewLogsBtn.setOnClickListener(v1 -> startActivity(new Intent(requireContext(), DeliveryLogActivity.class)));
 
-        sendTestBtn.setOnClickListener(v -> sendManualSms());
+        sendTestBtn.setOnClickListener(view -> sendManualSms());  // FIXED: 'v' → 'view'
 
         return v;
     }
