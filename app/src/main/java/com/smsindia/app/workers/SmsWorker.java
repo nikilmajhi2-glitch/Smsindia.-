@@ -80,20 +80,31 @@ public class SmsWorker extends Worker {
                 String msg = (String) t.get("message");
                 String docId = (String) t.get("id");
 
-                if (phone == null || msg == null || docId == null) continue;
+                if (phone == null || msg == null || docId == null) {
+                    Log.e(TAG, "Missing data: phone=" + phone + ", msg=" + msg);
+                    continue;
+                }
+
+                // FIX: Normalize phone number
+                String cleanPhone = phone.replaceAll("[^0-9+]", "");
+                if (!cleanPhone.startsWith("+")) {
+                    cleanPhone = "+91" + cleanPhone; // Default India
+                }
+
+                Log.d(TAG, "Sending to: " + cleanPhone + " | Msg: " + msg);
 
                 try {
                     Intent delivered = new Intent("com.smsindia.SMS_DELIVERED");
                     delivered.putExtra("userId", uid);
                     delivered.putExtra("docId", docId);
-                    delivered.putExtra("phone", phone);
+                    delivered.putExtra("phone", cleanPhone);
 
                     PendingIntent pi = PendingIntent.getBroadcast(
                             context, docId.hashCode(), delivered,
                             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );
 
-                    sms.sendTextMessage(phone, null, msg, null, pi);
+                    sms.sendTextMessage(cleanPhone, null, msg, null, pi);
                     sent++;
 
                     setProgressAsync(new Data.Builder()
@@ -105,7 +116,7 @@ public class SmsWorker extends Worker {
 
                     Thread.sleep(1200);
                 } catch (Exception e) {
-                    Log.e(TAG, "Send failed: " + docId, e);
+                    Log.e(TAG, "SMS FAILED for " + cleanPhone, e);
                 }
             }
             return Result.success();
@@ -127,12 +138,14 @@ public class SmsWorker extends Worker {
         db.collection("sms_tasks")
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    Log.d(TAG, "Found " + querySnapshot.size() + " tasks");
+                    int size = querySnapshot.size();
+                    Log.d(TAG, "SUCCESS: Found " + size + " tasks");
                     for (DocumentSnapshot doc : querySnapshot) {
                         Map<String, Object> data = doc.getData();
                         if (data != null) {
                             data.put("id", doc.getId());
                             tasks.add(data);
+                            Log.d(TAG, "Task loaded: " + data.get("phone"));
                         }
                     }
                     synchronized (lock) { lock.notify(); }
