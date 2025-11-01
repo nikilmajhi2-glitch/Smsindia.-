@@ -165,13 +165,13 @@ public class TaskFragment extends Fragment {
     Button sendSingleBtn = root.findViewById(R.id.btn_send_single);
     TextView failHint = root.findViewById(R.id.fail_hint);
 
-    statusMessage.setText("SMS sent to " + phone + " ✓
+    statusMessage.setText("SMS sent to" + phone + "
 ₹0.16 credited!");
     statusCard.setCardBackgroundColor(Color.parseColor("#C8E6C9")); // Green
     sendingProgress.setVisibility(View.GONE);
     sendSingleBtn.setEnabled(true);
     failHint.setVisibility(View.GONE);
-}
+    }
 
     public static void showFailUI(View root, String phone, boolean repeated) {
         TextView statusMessage = root.findViewById(R.id.status_message);
