@@ -35,12 +35,13 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/Theme.SMSIndia.NoActionBar"
         tools:targetApi="35">
 
-        <!-- 🚀 Launch LoginActivity -->
+        <!-- 🚀 OTP-based login first -->
         <activity
-            android:name=".LoginActivity"
+            android:name=".OtpLoginActivity"
             android:exported="true"
             android:launchMode="singleTop"
             android:theme="@style/Theme.SMSIndia.NoActionBar">
@@ -50,26 +51,25 @@
             </intent-filter>
         </activity>
 
-        <!-- 📱 Main screen -->
+        <!-- 📱 Main screen after login -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.SMSIndia.NoActionBar" />
 
-        <!-- 🧾 Delivery Logs Screen -->
+        <!-- 🧾 Delivery Logs -->
         <activity
             android:name=".ui.DeliveryLogActivity"
             android:exported="true"
             android:label="Delivery Logs" />
 
-        <!-- ⚙️ Foreground SMS Sending Service -->
+        <!-- ⚙️ SMS Foreground Service -->
         <service
             android:name=".service.SmsForegroundService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|connectedDevice|shortService"
-            android:permission="android.permission.FOREGROUND_SERVICE" />
+            android:foregroundServiceType="dataSync|connectedDevice|shortService" />
 
-        <!-- 🔔 Firebase Cloud Messaging Service -->
+        <!-- 🔔 Firebase Messaging -->
         <service
             android:name=".service.MyFirebaseMessagingService"
             android:exported="false">
@@ -89,7 +89,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- 🔁 Restart background services after reboot -->
+        <!-- 🔁 Restart background after reboot -->
         <receiver
             android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
             android:enabled="true"
