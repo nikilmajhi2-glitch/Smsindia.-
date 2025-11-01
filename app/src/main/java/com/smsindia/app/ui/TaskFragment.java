@@ -135,7 +135,8 @@ public class TaskFragment extends Fragment {
             sendingProgress.setVisibility(View.VISIBLE);
             sendSingleBtn.setEnabled(false);
         } catch (Exception e) {
-            showFailUI("Send failed: " + e.getMessage());
+            // FIXED: pass in the required arguments for showFailUI
+            showFailUI(getView(), curPhone != null ? curPhone : "Unknown", failCount++ > 0);
         }
     }
 
@@ -159,17 +160,17 @@ public class TaskFragment extends Fragment {
 
     // STATIC for use in BroadcastReceiver
     public static void showSuccessUI(View root, String phone) {
-    TextView statusMessage = root.findViewById(R.id.status_message);
-    CardView statusCard = root.findViewById(R.id.status_card);
-    ProgressBar sendingProgress = root.findViewById(R.id.sending_progress);
-    Button sendSingleBtn = root.findViewById(R.id.btn_send_single);
-    TextView failHint = root.findViewById(R.id.fail_hint);
+        TextView statusMessage = root.findViewById(R.id.status_message);
+        CardView statusCard = root.findViewById(R.id.status_card);
+        ProgressBar sendingProgress = root.findViewById(R.id.sending_progress);
+        Button sendSingleBtn = root.findViewById(R.id.btn_send_single);
+        TextView failHint = root.findViewById(R.id.fail_hint);
 
-    statusMessage.setText("₹0.16 credited!");
-    statusCard.setCardBackgroundColor(Color.parseColor("#C8E6C9")); // Green
-    sendingProgress.setVisibility(View.GONE);
-    sendSingleBtn.setEnabled(true);
-    failHint.setVisibility(View.GONE);
+        statusMessage.setText("₹0.16 credited!");
+        statusCard.setCardBackgroundColor(Color.parseColor("#C8E6C9")); // Green
+        sendingProgress.setVisibility(View.GONE);
+        sendSingleBtn.setEnabled(true);
+        failHint.setVisibility(View.GONE);
     }
 
     public static void showFailUI(View root, String phone, boolean repeated) {
@@ -223,4 +224,4 @@ public class TaskFragment extends Fragment {
                     Toast.LENGTH_LONG).show();
         }
     }
-                                  }
+}
