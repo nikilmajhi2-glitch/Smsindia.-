@@ -37,7 +37,7 @@ public class TaskFragment extends Fragment {
     private static final String TAG = "TaskFragment";
 
     private Button startBtn, viewLogsBtn;
-    private TextView tvStatus, tvSentCount, tvDebug; // BUG DETECTOR
+    private TextView tvStatus, tvSentCount, tvDebug;
     private ProgressBar progressBar;
 
     private boolean isRunning = false;
@@ -54,7 +54,7 @@ public class TaskFragment extends Fragment {
         tvStatus = v.findViewById(R.id.tv_status);
         tvSentCount = v.findViewById(R.id.tv_sent_count);
         progressBar = v.findViewById(R.id.progress_bar);
-        tvDebug = v.findViewById(R.id.tv_debug); // BUG DETECTOR
+        tvDebug = v.findViewById(R.id.tv_debug);
 
         checkAndRequestSmsPermissions();
 
@@ -89,7 +89,7 @@ public class TaskFragment extends Fragment {
         isRunning = true;
         progressBar.setIndeterminate(true);
         startBtn.setText("Stop Task");
-        tvStatus.setText("Assigning tasks…");
+        tvStatus.setText("Assigning tasks...");
         tvStatus.setTextColor(getResources().getColor(R.color.orange_700));
         tvSentCount.setText("Sent: 0");
         tvDebug.setText("Debug: Initializing...");
@@ -106,7 +106,6 @@ public class TaskFragment extends Fragment {
         WorkManager.getInstance(requireContext())
                 .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, work);
 
-        // BUG DETECTOR: Observe EVERYTHING
         WorkManager.getInstance(requireContext())
                 .getWorkInfoByIdLiveData(currentWorkId)
                 .observe(getViewLifecycleOwner(), workInfo -> {
@@ -115,16 +114,13 @@ public class TaskFragment extends Fragment {
                         return;
                     }
 
-                    Log.d(TAG, "Work state: " + workInfo.getState());
-
-                    // PROGRESS
                     androidx.work.Data progress = workInfo.getProgress();
                     int sent = progress.getInt("sent", 0);
                     int total = progress.getInt("total", 0);
 
                     if (total > 0) {
                         tvSentCount.setText("Sent: " + sent + "/" + total);
-                        tvStatus.setText("Sending messages…");
+                        tvStatus.setText("Sending messages...");
                         progressBar.setIndeterminate(false);
                         progressBar.setMax(total);
                         progressBar.setProgress(sent);
@@ -133,7 +129,6 @@ public class TaskFragment extends Fragment {
                         tvDebug.setText("Debug: Waiting for tasks...");
                     }
 
-                    // FINAL STATE
                     if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
                         if (total == 0) {
                             tvStatus.setText("No tasks available");
@@ -147,9 +142,10 @@ public class TaskFragment extends Fragment {
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.FAILED) {
                         String error = workInfo.getOutputData().getString("error");
+                        String msg = error != null ? error : "Unknown error (check Logcat)";
                         tvStatus.setText("Task failed");
                         tvStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-                        tvDebug.setText("Debug: FAILED → " + (error != null ? error : "Unknown"));
+                        tvDebug.setText("Debug: FAILED -> " + msg);
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.CANCELLED) {
                         tvStatus.setText("Task cancelled");

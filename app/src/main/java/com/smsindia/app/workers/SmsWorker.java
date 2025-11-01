@@ -114,7 +114,6 @@ public class SmsWorker extends Worker {
                             .build());
                 } catch (Exception e) {
                     Log.e(TAG, "Send failed for " + docId, e);
-                    // Continue with next
                 }
             }
 
@@ -124,7 +123,7 @@ public class SmsWorker extends Worker {
         } catch (Exception e) {
             Log.e(TAG, "Worker crashed", e);
             return Result.failure(new Data.Builder()
-                    .putString("error", e.getMessage() != null ? e.getMessage() : "Unknown error")
+                    .putString("error", e.getMessage() != null ? e.getMessage() : "Worker crashed")
                     .build());
         }
     }

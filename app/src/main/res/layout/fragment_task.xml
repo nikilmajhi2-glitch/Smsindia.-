@@ -6,7 +6,6 @@
     android:padding="16dp"
     android:background="#FAFAFA">
 
-    <!-- Title -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -16,7 +15,6 @@
         android:textColor="#FF9800"
         android:layout_marginBottom="16dp" />
 
-    <!-- Status -->
     <TextView
         android:id="@+id/tv_status"
         android:layout_width="match_parent"
@@ -26,7 +24,6 @@
         android:textColor="#666666"
         android:layout_marginBottom="8dp" />
 
-    <!-- Sent Count -->
     <TextView
         android:id="@+id/tv_sent_count"
         android:layout_width="match_parent"
@@ -37,7 +34,6 @@
         android:textColor="#333333"
         android:layout_marginBottom="12dp" />
 
-    <!-- Progress Bar -->
     <ProgressBar
         android:id="@+id/progress_bar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -48,7 +44,6 @@
         android:layout_marginBottom="16dp"
         android:progressTint="#FF9800" />
 
-    <!-- Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
