@@ -78,6 +78,52 @@
                 android:layout_marginStart="8dp" />
         </LinearLayout>
 
+        <!-- STEP-BY-STEP FETCH/SEND SECTION -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NEXT FIRESTORE SMS TASK"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginBottom="12dp" />
+
+        <TextView
+            android:id="@+id/tv_fetch_number"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Number: "
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:id="@+id/tv_fetch_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Content: "
+            android:textSize="16sp"
+            android:textColor="#333333"
+            android:layout_marginBottom="12dp"/>
+
+        <Button
+            android:id="@+id/btn_fetch_next"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:text="Fetch Next"
+            android:backgroundTint="#009688"
+            android:textColor="#FFF"
+            android:layout_marginBottom="8dp"/>
+
+        <Button
+            android:id="@+id/btn_send_single"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:text="Send SMS"
+            android:backgroundTint="#4CAF50"
+            android:textColor="#FFF"
+            android:layout_marginBottom="16dp"/>
+
         <!-- MANUAL SMS TEST -->
         <TextView
             android:layout_width="wrap_content"
