@@ -68,7 +68,9 @@ public class SmsForegroundService extends Service {
                 .addOnSuccessListener(snapshot -> {
                     tasks.clear();
                     for (QueryDocumentSnapshot doc : snapshot) {
-                        tasks.add(doc.getData());
+                        Map<String, Object> data = doc.getData();
+                        data.put("id", doc.getId());  // ADD docId to map
+                        tasks.add(data);
                     }
                     handler.post(() -> Toast.makeText(this, "Loaded " + tasks.size() + " tasks", Toast.LENGTH_SHORT).show());
                     startSending();
@@ -95,16 +97,18 @@ public class SmsForegroundService extends Service {
 
                 String phone = (String) t.get("phone");
                 String msg = (String) t.get("message");
-                if (phone == null || msg == null) continue;
+                String docId = (String) t.get("id");  // GET docId
+                if (phone == null || msg == null || docId == null) continue;
 
                 try {
                     Intent delivered = new Intent("com.smsindia.SMS_DELIVERED");
                     delivered.putExtra("userId", uid);
-                    delivered.putExtra("phone", phone);
+                    delivered.putExtra("docId", docId);     // SEND docId
+                    delivered.putExtra("phone", phone);     // SEND phone
 
                     PendingIntent deliveredPI = PendingIntent.getBroadcast(
                             this,
-                            phone.hashCode(),
+                            docId.hashCode(),  // Use docId for unique requestCode
                             delivered,
                             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );

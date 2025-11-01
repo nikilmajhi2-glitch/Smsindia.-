@@ -1,15 +1,13 @@
 package com.smsindia.app.ui;
 
+import android.content sharedPreferences;
 import android.os.Bundle;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.smsindia.app.R;
@@ -18,27 +16,30 @@ public class DeliveryLogActivity extends AppCompatActivity {
 
     private LinearLayout logsContainer;
     private FirebaseFirestore db;
-    private FirebaseAuth auth;
+    private String uid;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_delivery_logs);
 
         logsContainer = findViewById(R.id.logs_container);
         db = FirebaseFirestore.getInstance();
-        auth = FirebaseAuth.getInstance();
+
+        // GET UID FROM SharedPreferences (NOT FirebaseAuth)
+        SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
+        uid = prefs.getString("mobile", "");
+
+        if (uid.isEmpty()) {
+            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         loadLogs();
     }
 
     private void loadLogs() {
-        String uid = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
-        if (uid == null) {
-            Toast.makeText(this, "User not logged in", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         db.collection("sent_logs")
                 .whereEqualTo("userId", uid)
                 .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
@@ -46,18 +47,20 @@ public class DeliveryLogActivity extends AppCompatActivity {
                 .addOnSuccessListener(snapshot -> {
                     logsContainer.removeAllViews();
                     if (snapshot.isEmpty()) {
-                        addText("No logs found yet 💤");
+                        addText("No logs found yet");
                         return;
                     }
                     for (QueryDocumentSnapshot doc : snapshot) {
                         String phone = doc.getString("phone");
-                        long time = doc.getLong("timestamp");
-                        String formatted = android.text.format.DateFormat.format("dd MMM, hh:mm a", time).toString();
-                        addText("📱 " + phone + "  •  " + formatted);
+                        Long timestamp = doc.getLong("timestamp");
+                        if (phone == null || timestamp == null) continue;
+
+                        String formatted = android.text.format.DateFormat.format("dd MMM, hh:mm a", timestamp).toString();
+                        addText("Phone: " + phone + "  •  " + formatted);
                     }
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "❌ Failed to load logs: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Failed to load logs: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
 

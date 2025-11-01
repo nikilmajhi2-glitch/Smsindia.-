@@ -6,6 +6,7 @@
         android:minSdkVersion="24"
         android:targetSdkVersion="35" />
 
+    <!-- PERMISSIONS -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
@@ -20,11 +21,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <permission
-        android:name="com.smsindia.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-        android:protectionLevel="signature" />
-    <uses-permission android:name="com.smsindia.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
-
     <application
         android:name=".MyApp"
         android:allowBackup="true"
@@ -36,14 +32,14 @@
         android:theme="@style/Theme.SMSIndia.NoActionBar"
         tools:targetApi="35">
 
-        <!-- LOGIN ACTIVITY = NO LAUNCHER -->
+        <!-- LOGIN ACTIVITY -->
         <activity
             android:name=".LoginActivity"
             android:exported="false"
             android:launchMode="singleTop"
             android:theme="@style/Theme.SMSIndia.NoActionBar" />
 
-        <!-- MAIN ACTIVITY = LAUNCHER -->
+        <!-- MAIN ACTIVITY -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -57,14 +53,18 @@
         <!-- DELIVERY LOGS -->
         <activity
             android:name=".ui.DeliveryLogActivity"
-            android:exported="true"
+            android:exported="false"
             android:label="Delivery Logs" />
 
-        <!-- FOREGROUND SERVICE -->
+        <!-- FOREGROUND SERVICE - FIXED -->
         <service
             android:name=".service.SmsForegroundService"
             android:exported="false"
-            android:foregroundServiceType="dataSync|connectedDevice|shortService" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="sms" />
+        </service>
 
         <!-- FIREBASE MESSAGING -->
         <service
@@ -75,22 +75,21 @@
             </intent-filter>
         </service>
 
-        <!-- SMS DELIVERY RECEIVER -->
+        <!-- SMS DELIVERY RECEIVER - SIMPLIFIED -->
         <receiver
             android:name=".receivers.SmsDeliveryReceiver"
-            android:exported="true"
-            android:permission="com.smsindia.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
-            android:directBootAware="true">
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="com.smsindia.SMS_DELIVERED" />
             </intent-filter>
         </receiver>
 
-        <!-- RESTART AFTER BOOT -->
+        <!-- BOOT RECEIVER - YOUR OWN -->
         <receiver
-            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+            android:name=".receivers.BootReceiver"
             android:enabled="true"
-            android:exported="false">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
