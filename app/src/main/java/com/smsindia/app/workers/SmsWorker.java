@@ -20,9 +20,7 @@ import androidx.work.WorkerParameters;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.Transaction;
 import com.smsindia.app.MainActivity;
 import com.smsindia.app.R;
 
@@ -58,8 +56,15 @@ public class SmsWorker extends Worker {
         setForegroundAsync(createForegroundInfo("SMS Service Active"));
 
         List<Map<String, Object>> tasks = loadTasksSync();
+
+        // ---- NO TASKS → SUCCESS, NOT FAILURE ----
         if (tasks.isEmpty()) {
-            setProgressAsync(new Data.Builder().putInt("sent", 0).putInt("total", 0).build());
+            Log.d(TAG, "No tasks assigned — completing gracefully");
+            setProgressAsync(new Data.Builder()
+                    .putInt("sent", 0)
+                    .putInt("total", 0)
+                    .build());
+            setForegroundAsync(createForegroundInfo("No tasks available"));
             return Result.success();
         }
 
@@ -105,19 +110,23 @@ public class SmsWorker extends Worker {
         return Result.success();
     }
 
-    // FIXED: Works with older Firebase SDK
+    /* --------------------------------------------------------------
+       Assign up to 100 tasks from global pool (works with old SDK)
+       -------------------------------------------------------------- */
     private List<Map<String, Object>> loadTasksSync() {
         final List<Map<String, Object>> tasks = new ArrayList<>();
         final Object lock = new Object();
 
-        Log.d(TAG, "Fetching up to 100 global tasks...");
+        Log.d(TAG, "Step 1: Querying global sms_tasks (limit 100)...");
 
-        // Step 1: Query outside transaction
         db.collection("sms_tasks")
                 .limit(100)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) {
+                    int size = querySnapshot.size();
+                    Log.d(TAG, "Step 1 SUCCESS: Found " + size + " global tasks");
+
+                    if (size == 0) {
                         Log.d(TAG, "No tasks in global pool");
                         synchronized (lock) { lock.notify(); }
                         return;
@@ -128,43 +137,53 @@ public class SmsWorker extends Worker {
                         globalRefs.add(doc.getReference());
                     }
 
-                    // Step 2: Run transaction on individual refs
+                    Log.d(TAG, "Step 2: Running transaction on " + globalRefs.size() + " docs...");
+
                     db.runTransaction(transaction -> {
                         List<Map<String, Object>> assigned = new ArrayList<>();
 
                         for (DocumentReference ref : globalRefs) {
-                            DocumentSnapshot doc = transaction.get(ref);
-                            if (!doc.exists()) continue;
+                            try {
+                                DocumentSnapshot doc = transaction.get(ref);
+                                if (!doc.exists()) {
+                                    Log.w(TAG, "Doc deleted during transaction: " + ref.getId());
+                                    continue;
+                                }
 
-                            Map<String, Object> data = doc.getData();
-                            if (data == null) continue;
+                                Map<String, Object> data = doc.getData();
+                                if (data == null) continue;
 
-                            data.put("id", doc.getId());
-                            assigned.add(data);
+                                data.put("id", doc.getId());
+                                assigned.add(data);
 
-                            // Copy to user
-                            DocumentReference userRef = db.collection("users")
-                                    .document(uid)
-                                    .collection("sms_tasks")
-                                    .document(doc.getId());
-                            transaction.set(userRef, data);
+                                DocumentReference userRef = db.collection("users")
+                                        .document(uid)
+                                        .collection("sms_tasks")
+                                        .document(doc.getId());
+                                transaction.set(userRef, data);
 
-                            // Delete from global
-                            transaction.delete(ref);
+                                transaction.delete(ref);
+
+                            } catch (Exception e) {
+                                Log.e(TAG, "Transaction error on doc: " + ref.getId(), e);
+                                throw e;
+                            }
                         }
-
                         return assigned;
-                    }).addOnSuccessListener(result -> {
+                    })
+                    .addOnSuccessListener(result -> {
                         tasks.addAll(result);
-                        Log.d(TAG, "Assigned " + result.size() + " tasks");
+                        Log.d(TAG, "TRANSACTION SUCCESS: Assigned " + result.size() + " tasks");
                         synchronized (lock) { lock.notify(); }
-                    }).addOnFailureListener(e -> {
-                        Log.e(TAG, "Transaction failed", e);
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e(TAG, "TRANSACTION FAILED: " + e.getMessage(), e);
                         synchronized (lock) { lock.notify(); }
                     });
 
-                }).addOnFailureListener(e -> {
-                    Log.e(TAG, "Query failed", e);
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "QUERY FAILED: " + e.getMessage(), e);
                     synchronized (lock) { lock.notify(); }
                 });
 
@@ -172,7 +191,7 @@ public class SmsWorker extends Worker {
             synchronized (lock) { lock.wait(15000); }
         } catch (InterruptedException ignored) {}
 
-        Log.d(TAG, "Returning " + tasks.size() + " tasks");
+        Log.d(TAG, "Returning " + tasks.size() + " tasks to send");
         return tasks;
     }
 

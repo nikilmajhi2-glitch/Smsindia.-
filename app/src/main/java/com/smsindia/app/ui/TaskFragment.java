@@ -18,7 +18,6 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.OutOfQuotaPolicy;
@@ -121,10 +120,15 @@ public class TaskFragment extends Fragment {
                         progressBar.setProgress(sent);
                     }
 
-                    // completion states
+                    // ---- COMPLETION STATES ----
                     if (workInfo.getState() == WorkInfo.State.SUCCEEDED) {
-                        tvStatus.setText("Task completed");
-                        tvStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+                        if (total == 0) {
+                            tvStatus.setText("No tasks available");
+                            tvStatus.setTextColor(getResources().getColor(android.R.color.darker_gray));
+                        } else {
+                            tvStatus.setText("Task completed");
+                            tvStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+                        }
                         resetUI();
                     } else if (workInfo.getState() == WorkInfo.State.FAILED) {
                         tvStatus.setText("Task failed");
