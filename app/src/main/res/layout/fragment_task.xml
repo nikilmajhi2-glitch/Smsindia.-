@@ -30,6 +30,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
+    <!-- ADD THIS: Sent Count Display -->
+    <TextView
+        android:id="@+id/tv_sent_count"
+        android:text="Sent: 0"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="12dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
     <ProgressBar
         android:id="@+id/progress_bar"
         style="?android:attr/progressBarStyleHorizontal"
@@ -46,17 +57,17 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <!-- 📊 View Delivery Stats Button -->
+    <!-- View Delivery Stats Button -->
     <Button
         android:id="@+id/btn_view_logs"
-        android:text="📊 View Delivery Stats"
+        android:text="View Delivery Stats"
         android:layout_marginTop="12dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
     <Button
         android:id="@+id/btn_start_task"
-        android:text="▶ Start SMS Task"
+        android:text="Start SMS Task"
         android:layout_marginTop="20dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
