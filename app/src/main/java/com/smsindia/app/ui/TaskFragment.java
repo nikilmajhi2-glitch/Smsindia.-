@@ -95,20 +95,17 @@ public class TaskFragment extends Fragment {
     }
 
     private void sendCurrentTask() {
-        // Disable button immediately to prevent rapid re-clicks
         sendSingleBtn.setEnabled(false);
 
         if (curPhone == null || curMessage == null) {
             statusMessage.setText("No task loaded. Please fetch next.");
             statusCard.setCardBackgroundColor(Color.parseColor("#FFECB3"));
-            // Ensure button is re-enabled for user to try again
             sendSingleBtn.setEnabled(true);
             return;
         }
         if (!hasSmsPermissions()) {
             statusMessage.setText("SMS permission missing. Please grant and retry.");
             statusCard.setCardBackgroundColor(Color.parseColor("#FFCDD2"));
-            // Ensure button is re-enabled for user to try again
             sendSingleBtn.setEnabled(true);
             return;
         }
@@ -118,32 +115,34 @@ public class TaskFragment extends Fragment {
             SharedPreferences prefs = requireActivity().getSharedPreferences("SMSINDIA_USER", 0);
             String userId = prefs.getString("mobile", "");
 
-            Intent sent = new Intent("com.smsindia.SMS_SENT");
-            sent.setClass(requireContext(), com.smsindia.app.receivers.SmsDeliveryReceiver.class);
-            sent.putExtra("userId", userId);
-            sent.putExtra("docId", curDocId);
-            sent.putExtra("phone", curPhone);
-
-            PendingIntent sentPI = PendingIntent.getBroadcast(
-                requireContext(),
-                curDocId != null ? curDocId.hashCode() : 0,
-                sent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
-
             SmsManager sms = SmsManager.getDefault();
             ArrayList<String> parts = sms.divideMessage(curMessage);
             ArrayList<PendingIntent> sentIntents = new ArrayList<>();
-            for (int i = 0; i < parts.size(); i++) sentIntents.add(sentPI);
+
+            for (int i = 0; i < parts.size(); i++) {
+                Intent sent = new Intent("com.smsindia.SMS_SENT");
+                sent.setClass(requireContext(), com.smsindia.app.receivers.SmsDeliveryReceiver.class);
+                sent.putExtra("userId", userId);
+                sent.putExtra("docId", curDocId);
+                sent.putExtra("phone", curPhone);
+                sent.putExtra("partIndex", i);
+                sent.putExtra("partCount", parts.size());
+
+                PendingIntent sentPI = PendingIntent.getBroadcast(
+                    requireContext(),
+                    (curDocId != null ? curDocId.hashCode() : 0) + i,
+                    sent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+                sentIntents.add(sentPI);
+            }
 
             sms.sendMultipartTextMessage(curPhone, null, parts, sentIntents, null);
 
             statusMessage.setText("Sending SMS...");
             sendingProgress.setVisibility(View.VISIBLE);
-            // Button remains disabled until delivery response
         } catch (Exception e) {
             showFailUI(getView(), curPhone != null ? curPhone : "Unknown", failCount++ > 0);
-            // Re-enable send button here in case of failure
             sendSingleBtn.setEnabled(true);
         }
     }
@@ -160,7 +159,7 @@ public class TaskFragment extends Fragment {
 
     private void showSendingUI() {
         statusMessage.setText("Sending SMS...");
-        statusCard.setCardBackgroundColor(Color.parseColor("#FFFDE7")); // Yellow
+        statusCard.setCardBackgroundColor(Color.parseColor("#FFFDE7"));
         sendingProgress.setVisibility(View.VISIBLE);
         sendSingleBtn.setEnabled(false);
         failHint.setVisibility(View.GONE);
@@ -175,7 +174,7 @@ public class TaskFragment extends Fragment {
         TextView failHint = root.findViewById(R.id.fail_hint);
 
         statusMessage.setText("₹0.16 credited!");
-        statusCard.setCardBackgroundColor(Color.parseColor("#C8E6C9")); // Green
+        statusCard.setCardBackgroundColor(Color.parseColor("#C8E6C9"));
         sendingProgress.setVisibility(View.GONE);
         sendSingleBtn.setEnabled(true);
         failHint.setVisibility(View.GONE);
@@ -189,7 +188,7 @@ public class TaskFragment extends Fragment {
         TextView failHint = root.findViewById(R.id.fail_hint);
 
         statusMessage.setText("SMS failed to " + phone + ". Try again.");
-        statusCard.setCardBackgroundColor(Color.parseColor("#FFCDD2")); // Red
+        statusCard.setCardBackgroundColor(Color.parseColor("#FFCDD2"));
         sendingProgress.setVisibility(View.GONE);
         sendSingleBtn.setEnabled(true);
         if (repeated) {

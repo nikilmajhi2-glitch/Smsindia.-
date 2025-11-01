@@ -16,7 +16,10 @@ public class SmsDeliveryReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        String userId = intent.getStringExtra("userId");  // mobile number = doc ID
+        int partIndex = intent.getIntExtra("partIndex", 0);
+        if (partIndex != 0) return; // Credit/delete/log only once, on first part
+
+        String userId = intent.getStringExtra("userId");
         String docId = intent.getStringExtra("docId");
         String phone = intent.getStringExtra("phone");
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -28,19 +31,16 @@ public class SmsDeliveryReceiver extends BroadcastReceiver {
                 failCount = 0;
                 Toast.makeText(context, "SMS Sent to " + phone + ". ₹0.16 credited!", Toast.LENGTH_SHORT).show();
 
-                // DIRECT BALANCE UPDATE
                 if (userId != null && !userId.isEmpty()) {
                     db.collection("users")
                       .document(userId)
                       .update("balance", FieldValue.increment(0.16));
                 }
 
-                // DELETE TASK
                 if (docId != null) {
                     db.collection("sms_tasks").document(docId).delete();
                 }
 
-                // Update fragment UI (if it's visible)
                 if (context instanceof android.app.Activity) {
                     Handler handler = new Handler(context.getMainLooper());
                     handler.post(() -> {
@@ -52,7 +52,6 @@ public class SmsDeliveryReceiver extends BroadcastReceiver {
             default:
                 failCount++;
                 Toast.makeText(context, "SMS Failed to " + phone, Toast.LENGTH_SHORT).show();
-                // Update fragment UI
                 if (context instanceof android.app.Activity) {
                     Handler handler = new Handler(context.getMainLooper());
                     handler.post(() -> {
@@ -63,7 +62,6 @@ public class SmsDeliveryReceiver extends BroadcastReceiver {
                 break;
         }
 
-        // LOG WITH PHONE
         if (userId != null && phone != null) {
             Map<String, Object> log = new HashMap<>();
             log.put("userId", userId);
