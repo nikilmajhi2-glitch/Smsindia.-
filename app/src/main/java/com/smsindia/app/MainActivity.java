@@ -22,8 +22,23 @@ import com.smsindia.app.ui.HomeFragment;
 public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView navView;
-    private ActivityResultLauncher<String> smsPermissionLauncher;
-    private ActivityResultLauncher<String> phonePermissionLauncher;
+
+    // Permission launchers (kept for possible future use)
+    private final ActivityResultLauncher<String> smsPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(),
+                    granted -> {
+                        if (!granted) {
+                            Toast.makeText(this, "SMS permission denied", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+    private final ActivityResultLauncher<String> phonePermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(),
+                    granted -> {
+                        if (!granted) {
+                            Toast.makeText(this, "Phone permission denied", Toast.LENGTH_SHORT).show();
+                        }
+                    });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,74 +46,69 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         navView = findViewById(R.id.bottomNavigationView);
 
-        // 🔹 Permission launchers
-        smsPermissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestPermission(),
-                granted -> {
-                    if (!granted)
-                        Toast.makeText(this, "❌ SMS permission denied", Toast.LENGTH_SHORT).show();
-                });
-
-        phonePermissionLauncher = registerForActivityResult(
-                new ActivityResultContracts.RequestPermission(),
-                granted -> {
-                    if (!granted)
-                        Toast.makeText(this, "❌ Phone permission denied", Toast.LENGTH_SHORT).show();
-                });
-
-        // 🔹 Check if user is registered on this device
+        // -----------------------------------------------------------------
+        // 1. Check user registration
+        // -----------------------------------------------------------------
         SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
         String mobile = prefs.getString("mobile", null);
         String deviceId = prefs.getString("deviceId", null);
 
         if (mobile == null || deviceId == null) {
-            Toast.makeText(this, "⚠️ Please sign in first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please sign in first", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
 
-        // ✅ Load HomeFragment initially
+        // -----------------------------------------------------------------
+        // 2. Load the default fragment
+        // -----------------------------------------------------------------
         loadFragment(new HomeFragment());
 
-        // 🔹 Handle Bottom Navigation
+        // -----------------------------------------------------------------
+        // 3. Bottom-navigation handling – **NO SWITCH**, use if-else
+        // -----------------------------------------------------------------
         navView.setOnItemSelectedListener(item -> {
-            Fragment selected = null;
+            int id = item.getItemId();
 
-            switch (item.getItemId()) {
-                case R.id.nav_home:
-                    selected = new HomeFragment();
-                    break;
-                case R.id.nav_tasks:
-                    selected = new TaskFragment();
-                    break;
-                case R.id.nav_sms:
-                    checkPermissionsBeforeSMS();
-                    selected = new SMSFragment();
-                    break;
-                case R.id.nav_profile:
-                    selected = new ProfileFragment();
-                    break;
+            if (id == R.id.nav_home) {
+                loadFragment(new HomeFragment());
+            } else if (id == R.id.nav_tasks) {
+                loadFragment(new TaskFragment());
+            } else if (id == R.id.nav_sms) {
+                // Permissions are checked **inside SMSFragment** when the user
+                // actually tries to send an SMS. Opening the tab does NOT block.
+                loadFragment(new SMSFragment());
+            } else if (id == R.id.nav_profile) {
+                loadFragment(new ProfileFragment());
             }
 
-            if (selected != null) {
-                loadFragment(selected);
-            }
             return true;
         });
     }
 
-    private void checkPermissionsBeforeSMS() {
+    // -----------------------------------------------------------------
+    // Helper: permission request (kept in case you want to reuse it)
+    // -----------------------------------------------------------------
+    @SuppressWarnings("unused")
+    private void requestSmsPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
             smsPermissionLauncher.launch(Manifest.permission.SEND_SMS);
         }
+    }
+
+    @SuppressWarnings("unused")
+    private void requestPhoneStatePermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
                 != PackageManager.PERMISSION_GRANTED) {
             phonePermissionLauncher.launch(Manifest.permission.READ_PHONE_STATE);
         }
     }
 
+    // -----------------------------------------------------------------
+    // Helper: replace fragment
+    // -----------------------------------------------------------------
     private void loadFragment(Fragment fragment) {
         getSupportFragmentManager()
                 .beginTransaction()
