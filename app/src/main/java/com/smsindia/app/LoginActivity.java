@@ -1,9 +1,6 @@
 package com.smsindia.app;
 
-import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -14,93 +11,127 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class LoginActivity extends AppCompatActivity {
 
+    private EditText phoneInput, passwordInput;
+    private Button loginBtn, signupBtn;
     private TextView deviceIdText;
-    private EditText phoneInput;
-    private Button registerBtn;
-    private FirebaseFirestore db;
-    private SharedPreferences prefs;
 
-    @SuppressLint("HardwareIds")
+    private FirebaseFirestore db;
+    private String deviceId;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        deviceIdText = findViewById(R.id.deviceIdText);
-        phoneInput = findViewById(R.id.phoneInput);
-        registerBtn = findViewById(R.id.registerBtn);
-
         db = FirebaseFirestore.getInstance();
-        prefs = getSharedPreferences("SMSIndiaPrefs", Context.MODE_PRIVATE);
 
-        // Get unique Android ID
-        String deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        phoneInput = findViewById(R.id.phoneInput);
+        passwordInput = findViewById(R.id.passwordInput);
+        loginBtn = findViewById(R.id.loginBtn);
+        signupBtn = findViewById(R.id.signupBtn);
+        deviceIdText = findViewById(R.id.deviceIdText);
+
+        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         deviceIdText.setText("Device ID: " + deviceId);
 
-        // If already registered, skip to Main
-        if (prefs.getBoolean("isRegistered", false)) {
-            startActivity(new Intent(this, MainActivity.class));
-            finish();
-            return;
-        }
-
-        registerBtn.setOnClickListener(v -> registerDevice(deviceId));
+        loginBtn.setOnClickListener(v -> loginUser());
+        signupBtn.setOnClickListener(v -> registerUser());
     }
 
-    private void registerDevice(String deviceId) {
+    private void loginUser() {
         String phone = phoneInput.getText().toString().trim();
+        String password = passwordInput.getText().toString().trim();
 
-        if (TextUtils.isEmpty(phone)) {
-            Toast.makeText(this, "Please enter your mobile number", Toast.LENGTH_SHORT).show();
+        if (TextUtils.isEmpty(phone) || TextUtils.isEmpty(password)) {
+            Toast.makeText(this, "Enter phone and password", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        // Check if device already exists in Firestore
-        db.collection("users").document(deviceId).get().addOnSuccessListener(document -> {
-            if (document.exists()) {
-                Toast.makeText(this, "Device already registered!", Toast.LENGTH_LONG).show();
-                prefs.edit().putBoolean("isRegistered", true).apply();
-                startActivity(new Intent(this, MainActivity.class));
-                finish();
-            } else {
-                saveNewUser(deviceId, phone);
+        db.collection("users").document(phone).get().addOnSuccessListener(snapshot -> {
+            if (!snapshot.exists()) {
+                Toast.makeText(this, "User not found!", Toast.LENGTH_SHORT).show();
+                return;
             }
-        }).addOnFailureListener(e ->
-                Toast.makeText(this, "Error checking device: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
 
-    private void saveNewUser(String deviceId, String phone) {
-        String uniqueToken = UUID.randomUUID().toString();
+            String storedPass = snapshot.getString("password");
+            String storedDevice = snapshot.getString("deviceId");
 
-        Map<String, Object> user = new HashMap<>();
-        user.put("phone", phone);
-        user.put("deviceId", deviceId);
-        user.put("token", uniqueToken);
-        user.put("balance", 0);
-        user.put("createdAt", System.currentTimeMillis());
-
-        db.collection("users").document(deviceId)
-                .set(user)
-                .addOnSuccessListener(aVoid -> {
-                    prefs.edit()
-                            .putBoolean("isRegistered", true)
-                            .putString("deviceId", deviceId)
-                            .putString("phone", phone)
-                            .apply();
-
-                    Toast.makeText(this, "Device registered successfully!", Toast.LENGTH_SHORT).show();
+            if (storedPass != null && storedPass.equals(password)) {
+                if (storedDevice != null && !storedDevice.equals(deviceId)) {
+                    Toast.makeText(this,
+                            "⚠ This account is linked to another device. Login denied.",
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "✅ Login successful!", Toast.LENGTH_SHORT).show();
                     startActivity(new Intent(this, MainActivity.class));
                     finish();
-                })
-                .addOnFailureListener(e ->
-                        Toast.makeText(this, "Failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                }
+            } else {
+                Toast.makeText(this, "Incorrect password", Toast.LENGTH_SHORT).show();
+            }
+        }).addOnFailureListener(e ->
+                Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void registerUser() {
+        String phone = phoneInput.getText().toString().trim();
+        String password = passwordInput.getText().toString().trim();
+
+        if (TextUtils.isEmpty(phone) || TextUtils.isEmpty(password)) {
+            Toast.makeText(this, "Enter phone and password", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Check if this device already registered
+        db.collection("users")
+                .whereEqualTo("deviceId", deviceId)
+                .get()
+                .addOnSuccessListener(query -> {
+                    if (!query.isEmpty()) {
+                        Toast.makeText(this,
+                                "⚠ This device is already registered!\nTrying again may lead to a ban.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+
+                    // Check if phone already exists
+                    db.collection("users").document(phone).get()
+                            .addOnSuccessListener(snapshot -> {
+                                if (snapshot.exists()) {
+                                    Toast.makeText(this,
+                                            "⚠ Phone already registered! Use Login.",
+                                            Toast.LENGTH_LONG).show();
+                                    return;
+                                }
+
+                                Map<String, Object> user = new HashMap<>();
+                                user.put("phone", phone);
+                                user.put("password", password);
+                                user.put("deviceId", deviceId);
+                                user.put("createdAt", System.currentTimeMillis());
+                                user.put("balance", 0);
+
+                                db.collection("users").document(phone).set(user)
+                                        .addOnSuccessListener(unused -> {
+                                            Toast.makeText(this,
+                                                    "✅ Registered successfully!",
+                                                    Toast.LENGTH_SHORT).show();
+                                            startActivity(new Intent(this, MainActivity.class));
+                                            finish();
+                                        })
+                                        .addOnFailureListener(e ->
+                                                Toast.makeText(this,
+                                                        "Error: " + e.getMessage(),
+                                                        Toast.LENGTH_SHORT).show());
+                            });
+                });
     }
 }

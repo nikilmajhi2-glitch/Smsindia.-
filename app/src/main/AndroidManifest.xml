@@ -22,7 +22,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
-    <!-- 🧩 App internal broadcast protection -->
+    <!-- 🧩 Internal broadcast protection -->
     <permission
         android:name="com.smsindia.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
         android:protectionLevel="signature" />
@@ -39,7 +39,7 @@
         android:theme="@style/Theme.SMSIndia.NoActionBar"
         tools:targetApi="35">
 
-        <!-- 🚀 Device-based Login/Registration first -->
+        <!-- 🚀 Device-based Login/Registration -->
         <activity
             android:name=".LoginActivity"
             android:exported="true"
@@ -51,7 +51,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 📱 Main Dashboard -->
+        <!-- 🏠 Main Dashboard -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -63,13 +63,13 @@
             android:exported="true"
             android:label="Delivery Logs" />
 
-        <!-- ⚙️ Foreground SMS Service -->
+        <!-- ⚙️ Foreground SMS Sending Service -->
         <service
             android:name=".service.SmsForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync|connectedDevice|shortService" />
 
-        <!-- 🔔 Firebase Messaging -->
+        <!-- 🔔 Firebase Messaging (push notifications) -->
         <service
             android:name=".service.MyFirebaseMessagingService"
             android:exported="false">
@@ -89,7 +89,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- 🔁 Restart background after reboot -->
+        <!-- 🔁 Restart after device reboot -->
         <receiver
             android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
             android:enabled="true"

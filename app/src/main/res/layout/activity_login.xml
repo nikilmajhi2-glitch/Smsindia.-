@@ -1,67 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-    android:gravity="center"
     android:padding="24dp"
+    android:gravity="center"
+    android:background="#FFF8F0"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#F6F8FB">
+    android:layout_height="match_parent">
 
-    <LinearLayout
-        android:orientation="vertical"
-        android:background="@android:color/white"
-        android:padding="24dp"
-        android:elevation="4dp"
+    <TextView
+        android:text="🔒 SMSIndia Secure Login"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#FF6F00"
+        android:layout_marginBottom="24dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <EditText
+        android:id="@+id/phoneInput"
+        android:hint="Mobile number"
+        android:inputType="phone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:layout_gravity="center"
-        android:clipToOutline="true"
-        android:backgroundTintMode="src_over"
-        android:backgroundTint="@android:color/white">
+        android:backgroundTint="#FF6F00"
+        android:layout_marginBottom="12dp" />
 
-        <TextView
-            android:id="@+id/appTitle"
-            android:text="📱 SMSIndia Device Registration"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#1A237E"
-            android:gravity="center"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp" />
+    <EditText
+        android:id="@+id/passwordInput"
+        android:hint="Password"
+        android:inputType="textPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#FF6F00"
+        android:layout_marginBottom="20dp" />
 
-        <TextView
-            android:id="@+id/deviceIdText"
-            android:text="Device ID: loading..."
-            android:textSize="14sp"
-            android:textColor="#424242"
-            android:background="#E8EAF6"
-            android:padding="10dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:textIsSelectable="true"
-            android:gravity="center"/>
+    <Button
+        android:id="@+id/loginBtn"
+        android:text="Login"
+        android:backgroundTint="#FF6F00"
+        android:textColor="@android:color/white"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
-        <EditText
-            android:id="@+id/phoneInput"
-            android:hint="Enter your mobile number"
-            android:inputType="phone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@android:drawable/edit_text"
-            android:padding="12dp"
-            android:layout_marginBottom="20dp"/>
+    <Button
+        android:id="@+id/signupBtn"
+        android:text="Sign Up"
+        android:backgroundTint="#FFA040"
+        android:textColor="@android:color/white"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp" />
 
-        <Button
-            android:id="@+id/registerBtn"
-            android:text="Register Device"
-            android:textAllCaps="false"
-            android:backgroundTint="#3949AB"
-            android:textColor="@android:color/white"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
+    <TextView
+        android:id="@+id/deviceIdText"
+        android:text="Device ID: ..."
+        android:textSize="14sp"
+        android:textColor="#888"
+        android:layout_marginTop="24dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </LinearLayout>

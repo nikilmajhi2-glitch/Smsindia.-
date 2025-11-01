@@ -1,6 +1,8 @@
 package com.smsindia.app;
 
 import android.Manifest;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Toast;
@@ -12,8 +14,6 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.smsindia.app.ui.ProfileFragment;
 import com.smsindia.app.ui.SMSFragment;
 import com.smsindia.app.ui.TaskFragment;
@@ -31,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         navView = findViewById(R.id.bottomNavigationView);
 
+        // 🔹 Permission launchers
         smsPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 granted -> {
@@ -45,28 +46,39 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(this, "❌ Phone permission denied", Toast.LENGTH_SHORT).show();
                 });
 
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
+        // 🔹 Check if user is registered on this device
+        SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
+        String mobile = prefs.getString("mobile", null);
+        String deviceId = prefs.getString("deviceId", null);
+
+        if (mobile == null || deviceId == null) {
             Toast.makeText(this, "⚠️ Please sign in first", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
 
+        // ✅ Load HomeFragment initially
         loadFragment(new HomeFragment());
 
+        // 🔹 Handle Bottom Navigation
         navView.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
             Fragment selected = null;
 
-            if (id == R.id.nav_home) {
-                selected = new HomeFragment();
-            } else if (id == R.id.nav_tasks) {
-                selected = new TaskFragment();
-            } else if (id == R.id.nav_sms) {
-                checkPermissionsBeforeSMS();
-                selected = new SMSFragment();
-            } else if (id == R.id.nav_profile) {
-                selected = new ProfileFragment();
+            switch (item.getItemId()) {
+                case R.id.nav_home:
+                    selected = new HomeFragment();
+                    break;
+                case R.id.nav_tasks:
+                    selected = new TaskFragment();
+                    break;
+                case R.id.nav_sms:
+                    checkPermissionsBeforeSMS();
+                    selected = new SMSFragment();
+                    break;
+                case R.id.nav_profile:
+                    selected = new ProfileFragment();
+                    break;
             }
 
             if (selected != null) {
