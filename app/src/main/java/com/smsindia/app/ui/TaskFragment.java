@@ -2,7 +2,6 @@ package com.smsindia.app.ui;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.telephony.SmsManager;
@@ -20,7 +19,6 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.smsindia.app.R;
@@ -29,10 +27,9 @@ public class TaskFragment extends Fragment {
 
     private static final int SMS_PERMISSION_CODE = 1001;
 
-    private Button fetchNextBtn, sendSingleBtn, viewLogsBtn, sendTestBtn;
+    private Button fetchNextBtn, sendSingleBtn, viewLogsBtn;
     private TextView tvFetchNumber, tvFetchMessage, tvStatus, tvSentCount, tvDebug;
     private ProgressBar progressBar;
-    private TextInputEditText etPhone, etMessage;
 
     private String curPhone, curMessage, curDocId;
 
@@ -42,28 +39,22 @@ public class TaskFragment extends Fragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_task, container, false);
 
-        // UI elements for step-by-step SMS fetch/send
         tvFetchNumber = v.findViewById(R.id.tv_fetch_number);
         tvFetchMessage = v.findViewById(R.id.tv_fetch_message);
         fetchNextBtn = v.findViewById(R.id.btn_fetch_next);
         sendSingleBtn = v.findViewById(R.id.btn_send_single);
 
-        // Existing controls
         viewLogsBtn = v.findViewById(R.id.btn_view_logs);
-        sendTestBtn = v.findViewById(R.id.btn_send_test);
         tvStatus = v.findViewById(R.id.tv_status);
         tvSentCount = v.findViewById(R.id.tv_sent_count);
         progressBar = v.findViewById(R.id.progress_bar);
         tvDebug = v.findViewById(R.id.tv_debug);
-        etPhone = v.findViewById(R.id.et_phone);
-        etMessage = v.findViewById(R.id.et_message);
 
         checkAndRequestSmsPermissions();
 
         fetchNextBtn.setOnClickListener(view -> fetchNextTask());
         sendSingleBtn.setOnClickListener(view -> sendCurrentTask());
         viewLogsBtn.setOnClickListener(v1 -> startActivity(new Intent(requireContext(), DeliveryLogActivity.class)));
-        sendTestBtn.setOnClickListener(view -> sendManualSms());
 
         return v;
     }
@@ -109,7 +100,7 @@ public class TaskFragment extends Fragment {
             Toast.makeText(requireContext(), "SMS sent!", Toast.LENGTH_SHORT).show();
             tvDebug.setText("Debug: SMS sent to " + curPhone);
 
-            // Optionally delete task from Firestore:
+            // Delete task from Firestore
             if (curDocId != null) {
                 FirebaseFirestore.getInstance()
                     .collection("sms_tasks")
@@ -124,32 +115,6 @@ public class TaskFragment extends Fragment {
         } catch (Exception e) {
             tvDebug.setText("Debug: SMS FAILED - " + e.getMessage());
             Toast.makeText(requireContext(), "Send failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-    }
-
-    private void sendManualSms() {
-        String phone = etPhone.getText().toString().trim();
-        String msg = etMessage.getText().toString().trim();
-
-        if (phone.isEmpty() || msg.isEmpty()) {
-            Toast.makeText(requireContext(), "Fill both fields", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (!hasSmsPermissions()) {
-            Toast.makeText(requireContext(), "SMS permission missing", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        tvDebug.setText("Debug: Sending test SMS...");
-        try {
-            SmsManager sms = SmsManager.getDefault();
-            sms.sendTextMessage(phone, null, msg, null, null);
-            tvDebug.setText("Debug: Test SMS sent to " + phone);
-            Toast.makeText(requireContext(), "Test SMS sent!", Toast.LENGTH_LONG).show();
-        } catch (Exception e) {
-            tvDebug.setText("Debug: SMS FAILED -> " + e.getMessage());
-            Toast.makeText(requireContext(), "SMS failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
