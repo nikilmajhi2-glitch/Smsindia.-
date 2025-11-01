@@ -5,6 +5,7 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.view.LayoutInflater;
@@ -17,6 +18,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
@@ -25,14 +27,18 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.smsindia.app.R;
 
+import java.util.ArrayList;
+
 public class TaskFragment extends Fragment {
 
     private static final int SMS_PERMISSION_CODE = 1001;
     private Button fetchNextBtn, sendSingleBtn, viewLogsBtn;
-    private TextView tvFetchNumber, tvFetchMessage, tvStatus, tvSentCount, tvDebug;
-    private ProgressBar progressBar;
+    private TextView tvFetchNumber, tvFetchMessage, statusMessage, failHint;
+    private ProgressBar sendingProgress;
+    private CardView statusCard;
 
     private String curPhone, curMessage, curDocId;
+    private int failCount = 0;
 
     @Nullable
     @Override
@@ -40,16 +46,16 @@ public class TaskFragment extends Fragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_task, container, false);
 
+        statusCard = v.findViewById(R.id.status_card);
+        statusMessage = v.findViewById(R.id.status_message);
+        failHint = v.findViewById(R.id.fail_hint);
+        sendingProgress = v.findViewById(R.id.sending_progress);
+
         tvFetchNumber = v.findViewById(R.id.tv_fetch_number);
         tvFetchMessage = v.findViewById(R.id.tv_fetch_message);
         fetchNextBtn = v.findViewById(R.id.btn_fetch_next);
         sendSingleBtn = v.findViewById(R.id.btn_send_single);
-
         viewLogsBtn = v.findViewById(R.id.btn_view_logs);
-        tvStatus = v.findViewById(R.id.tv_status);
-        tvSentCount = v.findViewById(R.id.tv_sent_count);
-        progressBar = v.findViewById(R.id.progress_bar);
-        tvDebug = v.findViewById(R.id.tv_debug);
 
         checkAndRequestSmsPermissions();
 
@@ -57,11 +63,12 @@ public class TaskFragment extends Fragment {
         sendSingleBtn.setOnClickListener(view -> sendCurrentTask());
         viewLogsBtn.setOnClickListener(v1 -> startActivity(new Intent(requireContext(), DeliveryLogActivity.class)));
 
+        showReadyUI();
         return v;
     }
 
     private void fetchNextTask() {
-        tvDebug.setText("Debug: Fetching...");
+        showReadyUI();
         FirebaseFirestore.getInstance()
             .collection("sms_tasks").limit(1).get()
             .addOnSuccessListener(snapshot -> {
@@ -73,65 +80,115 @@ public class TaskFragment extends Fragment {
 
                     tvFetchNumber.setText("Number: " + (curPhone != null ? curPhone : ""));
                     tvFetchMessage.setText("Content: " + (curMessage != null ? curMessage : ""));
-                    tvDebug.setText("Debug: Loaded 1 task");
                 } else {
                     tvFetchNumber.setText("Number: ");
                     tvFetchMessage.setText("Content: ");
                     curPhone = curMessage = curDocId = null;
-                    tvDebug.setText("Debug: No tasks found");
+                    statusMessage.setText("No SMS tasks available.");
+                    statusCard.setCardBackgroundColor(Color.parseColor("#FFECB3")); // light yellow
                 }
             })
             .addOnFailureListener(e -> {
-                tvDebug.setText("Debug: Firestore error - " + e.getMessage());
+                statusMessage.setText("Error fetching task: " + e.getMessage());
+                statusCard.setCardBackgroundColor(Color.parseColor("#FFCDD2")); // light red
             });
     }
 
     private void sendCurrentTask() {
         if (curPhone == null || curMessage == null) {
-            Toast.makeText(requireContext(), "No task loaded!", Toast.LENGTH_SHORT).show();
+            statusMessage.setText("No task loaded. Please fetch next.");
+            statusCard.setCardBackgroundColor(Color.parseColor("#FFECB3"));
             return;
         }
         if (!hasSmsPermissions()) {
-            Toast.makeText(requireContext(), "SMS permission missing", Toast.LENGTH_SHORT).show();
+            statusMessage.setText("SMS permission missing. Please grant and retry.");
+            statusCard.setCardBackgroundColor(Color.parseColor("#FFCDD2"));
             return;
         }
+
+        showSendingUI();
         try {
-            // Get user id/mobile from SharedPreferences
             SharedPreferences prefs = requireActivity().getSharedPreferences("SMSINDIA_USER", 0);
             String userId = prefs.getString("mobile", "");
 
-            // DELIVERY INTENT for SmsDeliveryReceiver
-            Intent delivered = new Intent("com.smsindia.SMS_DELIVERED");
-            delivered.setClass(requireContext(), com.smsindia.app.receivers.SmsDeliveryReceiver.class);
-            delivered.putExtra("userId", userId); // mobile
-            delivered.putExtra("docId", curDocId);
-            delivered.putExtra("phone", curPhone);
+            Intent sent = new Intent("com.smsindia.SMS_SENT");
+            sent.setClass(requireContext(), com.smsindia.app.receivers.SmsDeliveryReceiver.class);
+            sent.putExtra("userId", userId);
+            sent.putExtra("docId", curDocId);
+            sent.putExtra("phone", curPhone);
 
-            PendingIntent deliveredPI = PendingIntent.getBroadcast(
+            PendingIntent sentPI = PendingIntent.getBroadcast(
                 requireContext(),
                 curDocId != null ? curDocId.hashCode() : 0,
-                delivered,
+                sent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
 
             SmsManager sms = SmsManager.getDefault();
-            sms.sendTextMessage(curPhone, null, curMessage, null, deliveredPI);
+            ArrayList<String> parts = sms.divideMessage(curMessage);
+            ArrayList<PendingIntent> sentIntents = new ArrayList<>();
+            for (int i = 0; i < parts.size(); i++) sentIntents.add(sentPI);
 
-            Toast.makeText(requireContext(), "SMS send triggered!", Toast.LENGTH_SHORT).show();
-            tvDebug.setText("Debug: SMS send triggered, waiting for delivery...");
+            sms.sendMultipartTextMessage(curPhone, null, parts, sentIntents, null);
 
-            // Do NOT update balance or delete task here - receiver will handle!
-
-            // Clear UI for next fetch
-            tvFetchNumber.setText("Number: ");
-            tvFetchMessage.setText("Content: ");
-            curPhone = curMessage = curDocId = null;
+            statusMessage.setText("Sending SMS...");
+            sendingProgress.setVisibility(View.VISIBLE);
+            sendSingleBtn.setEnabled(false);
         } catch (Exception e) {
-            tvDebug.setText("Debug: SMS FAILED - " + e.getMessage());
-            Toast.makeText(requireContext(), "Send failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            showFailUI("Send failed: " + e.getMessage());
         }
     }
 
+    // UI Helpers
+    private void showReadyUI() {
+        statusMessage.setText("Ready to send SMS");
+        statusCard.setCardBackgroundColor(Color.parseColor("#FFFFFF"));
+        sendingProgress.setVisibility(View.GONE);
+        sendSingleBtn.setEnabled(true);
+        failHint.setVisibility(View.GONE);
+        failCount = 0;
+    }
+
+    private void showSendingUI() {
+        statusMessage.setText("Sending SMS...");
+        statusCard.setCardBackgroundColor(Color.parseColor("#FFFDE7")); // Yellow
+        sendingProgress.setVisibility(View.VISIBLE);
+        sendSingleBtn.setEnabled(false);
+        failHint.setVisibility(View.GONE);
+    }
+
+    public static void showSuccessUI(View root, String phone) {
+        TextView statusMessage = root.findViewById(R.id.status_message);
+        CardView statusCard = root.findViewById(R.id.status_card);
+        ProgressBar sendingProgress = root.findViewById(R.id.sending_progress);
+        Button sendSingleBtn = root.findViewById(R.id.btn_send_single);
+        TextView failHint = root.findViewById(R.id.fail_hint);
+
+        statusMessage.setText("SMS sent to " + phone + " ✓
+₹0.16 credited!");
+        statusCard.setCardBackgroundColor(Color.parseColor("#C8E6C9")); // Green
+        sendingProgress.setVisibility(View.GONE);
+        sendSingleBtn.setEnabled(true);
+        failHint.setVisibility(View.GONE);
+    }
+
+    public static void showFailUI(View root, String phone, boolean repeated) {
+        TextView statusMessage = root.findViewById(R.id.status_message);
+        CardView statusCard = root.findViewById(R.id.status_card);
+        ProgressBar sendingProgress = root.findViewById(R.id.sending_progress);
+        Button sendSingleBtn = root.findViewById(R.id.btn_send_single);
+        TextView failHint = root.findViewById(R.id.fail_hint);
+
+        statusMessage.setText("SMS failed to " + phone + ". Try again.");
+        statusCard.setCardBackgroundColor(Color.parseColor("#FFCDD2")); // Red
+        sendingProgress.setVisibility(View.GONE);
+        sendSingleBtn.setEnabled(true);
+        if (repeated) {
+            failHint.setText("Please check your SIM plan, active data, and network.");
+            failHint.setVisibility(View.VISIBLE);
+        }
+    }
+    
     private void checkAndRequestSmsPermissions() {
         if (!hasSmsPermissions()) {
             ActivityCompat.requestPermissions(
