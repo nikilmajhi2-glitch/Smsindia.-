@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ✅ SmsWorker — sends SMS and triggers delivery broadcast.
- * 💰 Balance update only happens in SmsDeliveryReceiver after real delivery confirmation.
- * 🟢 Now runs as a Foreground Worker for Android 14/15 stability.
+ * SmsWorker — sends SMS and triggers delivery broadcast.
+ * Balance update only happens in SmsDeliveryReceiver after real delivery confirmation.
+ * Runs as a Foreground Worker for Android 14/15 stability.
  */
 public class SmsWorker extends Worker {
 
@@ -45,19 +45,19 @@ public class SmsWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        // 🟩 Keep the worker alive on Android 15
+        // Keep the worker alive on Android 15
         setForegroundAsync(createForegroundInfo());
 
         String userId = getInputData().getString("userId");
         if (userId == null || userId.isEmpty()) {
-            showToast("❌ Missing user ID");
+            showToast("Missing user ID");
             return Result.failure();
         }
 
         try {
             if (ActivityCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS)
                     != PackageManager.PERMISSION_GRANTED) {
-                showToast("⚠️ SMS permission not granted!");
+                showToast("SMS permission not granted!");
                 return Result.failure();
             }
 
@@ -67,7 +67,7 @@ public class SmsWorker extends Worker {
             while (!isStopped()) {
                 List<Map<String, Object>> tasks = fetchTasks();
                 if (tasks == null || tasks.isEmpty()) {
-                    showToast("⚠️ No more SMS tasks");
+                    showToast("No more SMS tasks");
                     break;
                 }
 
@@ -82,7 +82,7 @@ public class SmsWorker extends Worker {
                         continue;
 
                     try {
-                        // ✅ Delivery Broadcast
+                        // Delivery Broadcast
                         String DELIVERED_ACTION = "com.smsindia.SMS_DELIVERED";
 
                         Intent deliveredIntent = new Intent(DELIVERED_ACTION);
@@ -98,31 +98,31 @@ public class SmsWorker extends Worker {
                                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                         );
 
-                        // 📤 Send SMS — balance updates only after delivery
+                        // Send SMS — balance updates only after delivery
                         smsManager.sendTextMessage(phone, null, message, null, deliveredPI);
                         totalSent++;
-                        showToast("📨 Sent to " + phone);
+                        showToast("Sent to " + phone);
 
                         // Short delay to prevent spam detection
                         Thread.sleep(1500);
 
                     } catch (Exception e) {
-                        showToast("❌ Send failed: " + e.getMessage());
+                        showToast("Send failed: " + e.getMessage());
                     }
                 }
             }
 
-            showToast("✅ Task complete. Total sent: " + totalSent);
+            showToast("Task complete. Total sent: " + totalSent);
             return Result.success();
 
         } catch (Exception e) {
-            showToast("❌ Error: " + e.getMessage());
+            showToast("Error: " + e.getMessage());
             return Result.failure();
         }
     }
 
     /**
-     * 🔔 Foreground notification for Android 15 stability.
+     * Foreground notification for Android 15 stability.
      */
     private ForegroundInfo createForegroundInfo() {
         String title = "SMSIndia is sending messages";
@@ -144,7 +144,7 @@ public class SmsWorker extends Worker {
         NotificationCompat.Builder notification = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setContentTitle(title)
                 .setContentText(text)
-                .setSmallIcon(R.drawable.ic_sms)
+                .setSmallIcon(android.R.drawable.sym_action_chat)  // FIXED: No ic_sms
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true);
 

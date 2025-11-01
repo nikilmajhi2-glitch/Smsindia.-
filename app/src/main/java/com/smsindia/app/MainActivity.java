@@ -15,7 +15,6 @@ import androidx.fragment.app.Fragment;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.smsindia.app.ui.ProfileFragment;
-import com.smsindia.app.ui.SMSFragment;
 import com.smsindia.app.ui.TaskFragment;
 import com.smsindia.app.ui.HomeFragment;
 
@@ -23,7 +22,6 @@ public class MainActivity extends AppCompatActivity {
 
     private BottomNavigationView navView;
 
-    // Permission launchers (kept for possible future use)
     private final ActivityResultLauncher<String> smsPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(),
                     granted -> {
@@ -46,9 +44,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         navView = findViewById(R.id.bottomNavigationView);
 
-        // -----------------------------------------------------------------
-        // 1. Check user registration
-        // -----------------------------------------------------------------
         SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
         String mobile = prefs.getString("mobile", null);
         String deviceId = prefs.getString("deviceId", null);
@@ -60,14 +55,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // -----------------------------------------------------------------
-        // 2. Load the default fragment
-        // -----------------------------------------------------------------
         loadFragment(new HomeFragment());
 
-        // -----------------------------------------------------------------
-        // 3. Bottom-navigation handling – **NO SWITCH**, use if-else
-        // -----------------------------------------------------------------
         navView.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
 
@@ -75,10 +64,6 @@ public class MainActivity extends AppCompatActivity {
                 loadFragment(new HomeFragment());
             } else if (id == R.id.nav_tasks) {
                 loadFragment(new TaskFragment());
-            } else if (id == R.id.nav_sms) {
-                // Permissions are checked **inside SMSFragment** when the user
-                // actually tries to send an SMS. Opening the tab does NOT block.
-                loadFragment(new SMSFragment());
             } else if (id == R.id.nav_profile) {
                 loadFragment(new ProfileFragment());
             }
@@ -87,9 +72,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // -----------------------------------------------------------------
-    // Helper: permission request (kept in case you want to reuse it)
-    // -----------------------------------------------------------------
     @SuppressWarnings("unused")
     private void requestSmsPermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
@@ -106,9 +88,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // -----------------------------------------------------------------
-    // Helper: replace fragment
-    // -----------------------------------------------------------------
     private void loadFragment(Fragment fragment) {
         getSupportFragmentManager()
                 .beginTransaction()

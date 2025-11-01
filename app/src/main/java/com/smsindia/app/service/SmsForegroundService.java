@@ -39,7 +39,6 @@ public class SmsForegroundService extends Service {
         super.onCreate();
         db = FirebaseFirestore.getInstance();
 
-        // GET UID FROM SharedPreferences (NOT FirebaseAuth)
         SharedPreferences prefs = getSharedPreferences("SMSINDIA_USER", MODE_PRIVATE);
         uid = prefs.getString("mobile", "");
 
@@ -113,11 +112,10 @@ public class SmsForegroundService extends Service {
                     sms.sendTextMessage(phone, null, msg, null, deliveredPI);
                     sent++;
 
-                    // Update notification
                     Notification n = buildNotification("Sending... (" + sent + "/" + tasks.size() + ")");
                     getSystemService(NotificationManager.class).notify(1, n);
 
-                    Thread.sleep(1500); // Respect rate limit
+                    Thread.sleep(1500);
                 } catch (Exception e) {
                     handler.post(() -> Toast.makeText(this, "Send failed: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                 }
