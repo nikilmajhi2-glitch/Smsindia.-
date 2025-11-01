@@ -50,20 +50,18 @@ public class SmsWorker extends Worker {
     public Result doWork() {
         if (uid.isEmpty()) {
             Log.e(TAG, "No user ID");
-            return Result.failure();
+            return Result.failure(new Data.Builder()
+                    .putString("error", "User not logged in")
+                    .build());
         }
 
         setForegroundAsync(createForegroundInfo("SMS Service Active"));
 
         List<Map<String, Object>> tasks = loadTasksSync();
 
-        // ---- NO TASKS → SUCCESS, NOT FAILURE ----
         if (tasks.isEmpty()) {
-            Log.d(TAG, "No tasks assigned — completing gracefully");
-            setProgressAsync(new Data.Builder()
-                    .putInt("sent", 0)
-                    .putInt("total", 0)
-                    .build());
+            Log.d(TAG, "No tasks assigned");
+            setProgressAsync(new Data.Builder().putInt("sent", 0).putInt("total", 0).build());
             setForegroundAsync(createForegroundInfo("No tasks available"));
             return Result.success();
         }
@@ -71,48 +69,66 @@ public class SmsWorker extends Worker {
         SmsManager sms = SmsManager.getDefault();
         int sent = 0;
 
-        for (Map<String, Object> t : tasks) {
-            if (isStopped()) break;
+        try {
+            for (Map<String, Object> t : tasks) {
+                if (isStopped()) {
+                    Log.d(TAG, "Worker stopped by user");
+                    break;
+                }
 
-            String phone = (String) t.get("phone");
-            String msg = (String) t.get("message");
-            String docId = (String) t.get("id");
+                String phone = (String) t.get("phone");
+                String msg = (String) t.get("message");
+                String docId = (String) t.get("id");
 
-            if (phone == null || msg == null || docId == null) continue;
+                if (phone == null || msg == null || docId == null) {
+                    Log.w(TAG, "Invalid task data: " + t);
+                    continue;
+                }
 
-            try {
-                Intent delivered = new Intent("com.smsindia.SMS_DELIVERED");
-                delivered.putExtra("userId", uid);
-                delivered.putExtra("docId", docId);
-                delivered.putExtra("phone", phone);
+                try {
+                    Intent delivered = new Intent("com.smsindia.SMS_DELIVERED");
+                    delivered.putExtra("userId", uid);
+                    delivered.putExtra("docId", docId);
+                    delivered.putExtra("phone", phone);
 
-                PendingIntent pi = PendingIntent.getBroadcast(
-                        context, docId.hashCode(), delivered,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-                );
+                    PendingIntent pi = PendingIntent.getBroadcast(
+                            context, docId.hashCode(), delivered,
+                            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                    );
 
-                sms.sendTextMessage(phone, null, msg, null, pi);
-                sent++;
+                    sms.sendTextMessage(phone, null, msg, null, pi);
+                    sent++;
 
-                setProgressAsync(new Data.Builder()
-                        .putInt("sent", sent)
-                        .putInt("total", tasks.size())
-                        .build());
+                    setProgressAsync(new Data.Builder()
+                            .putInt("sent", sent)
+                            .putInt("total", tasks.size())
+                            .build());
 
-                setForegroundAsync(createForegroundInfo("Sent " + sent + "/" + tasks.size()));
+                    setForegroundAsync(createForegroundInfo("Sent " + sent + "/" + tasks.size()));
 
-                Thread.sleep(1200);
-            } catch (Exception e) {
-                Log.e(TAG, "Send failed: " + docId, e);
+                    Thread.sleep(1200);
+                } catch (SecurityException e) {
+                    Log.e(TAG, "SMS permission denied", e);
+                    return Result.failure(new Data.Builder()
+                            .putString("error", "SMS permission denied")
+                            .build());
+                } catch (Exception e) {
+                    Log.e(TAG, "Send failed for " + docId, e);
+                    // Continue with next
+                }
             }
-        }
 
-        return Result.success();
+            Log.d(TAG, "Completed: " + sent + "/" + tasks.size());
+            return Result.success();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Worker crashed", e);
+            return Result.failure(new Data.Builder()
+                    .putString("error", e.getMessage() != null ? e.getMessage() : "Unknown error")
+                    .build());
+        }
     }
 
-    /* --------------------------------------------------------------
-       Assign up to 100 tasks from global pool (works with old SDK)
-       -------------------------------------------------------------- */
     private List<Map<String, Object>> loadTasksSync() {
         final List<Map<String, Object>> tasks = new ArrayList<>();
         final Object lock = new Object();
