@@ -1,5 +1,4 @@
 package com.smsindia.app.ui;
-
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -40,7 +39,7 @@ public class TaskFragment extends Fragment {
     private FirebaseFirestore db;
     private boolean isRunning = false;
 
-    private final Handler handler = new Handler(Looper.getMainLooper());
+    private Handler handler;
     private Runnable smsRunnable;
     private int sentCount = 0;
 
@@ -48,36 +47,32 @@ public class TaskFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_task, container, false);
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View v = inflater.inflate(R.layout.fragment_task, container, false);
 
-        // Initialize views
-        startBtn = view.findViewById(R.id.btn_start_task);
-        viewLogsBtn = view.findViewById(R.id.btn_view_logs);
-        tvStatus = view.findViewById(R.id.tv_status);
-        tvSentCount = view.findViewById(R.id.tv_sent_count);
-        progressBar = view.findViewById(R.id.progress_bar);
+        startBtn = v.findViewById(R.id.btn_start_task);
+        viewLogsBtn = v.findViewById(R.id.btn_view_logs);
+        tvStatus = v.findViewById(R.id.tv_status);
+        tvSentCount = v.findViewById(R.id.tv_sent_count);
+        progressBar = v.findViewById(R.id.progress_bar);
 
-        // Firebase
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
+        handler = new Handler(Looper.getMainLooper());
 
-        // Check permissions on start
         checkAndRequestSmsPermissions();
 
-        // Set click listeners
-        startBtn.setOnClickListener(v -> toggleTask());
-        viewLogsBtn.setOnClickListener(v ->
+        startBtn.setOnClickListener(view -> toggleTask());
+        viewLogsBtn.setOnClickListener(v1 ->
                 startActivity(new Intent(requireContext(), DeliveryLogActivity.class)));
 
-        return view;
+        return v;
     }
 
     private void toggleTask() {
         if (!hasSmsPermissions()) {
             checkAndRequestSmsPermissions();
-            Toast.makeText(requireContext(), "Please grant SMS permissions to continue", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -92,56 +87,43 @@ public class TaskFragment extends Fragment {
         isRunning = true;
         sentMessages.clear();
         sentCount = 0;
-        updateSentCount();
-
-        progressBar.setVisibility(View.VISIBLE);
-        startBtn.setText("Stop Task");
-        tvStatus.setText("Task running... Sending messages...");
-        tvStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.orange_700));
+        progressBar.setIndeterminate(true);
+        startBtn.setText("⏹ Stop Task");
+        tvStatus.setText("🚀 Task running... Sending messages...");
+        tvStatus.setTextColor(getResources().getColor(R.color.orange_700));
 
         smsRunnable = new Runnable() {
             @Override
             public void run() {
                 if (!isRunning) return;
 
-                // Simulate sending a message
-                String message = "Test SMS #" + (sentCount + 1);
+                // Fetch a message from your SMS queue (dummy example)
+                String msg = "This is test message #" + (sentCount + 1);
 
-                if (sentMessages.add(message)) { // Only count unique
+                if (!sentMessages.contains(msg)) {
+                    sentMessages.add(msg);
                     sentCount++;
-                    updateSentCount();
-
-                    // Trigger foreground service to send SMS
-                    Intent serviceIntent = new Intent(requireContext(), SmsForegroundService.class);
-                    serviceIntent.putExtra("message", message);
-                    ContextCompat.startForegroundService(requireContext(), serviceIntent);
+                    tvSentCount.setText("Total Sent: " + sentCount);
+                    // Call your service to send the SMS
+                    requireContext().startForegroundService(new Intent(requireContext(), SmsForegroundService.class));
                 }
 
-                // Schedule next
-                handler.postDelayed(this, 1500); // Every 1.5 sec
+                // Repeat every 1 second
+                handler.postDelayed(this, 1000);
             }
         };
-
         handler.post(smsRunnable);
     }
 
     private void stopTask() {
         isRunning = false;
-        if (smsRunnable != null) {
-            handler.removeCallbacks(smsRunnable);
-        }
-
-        progressBar.setVisibility(View.GONE);
-        startBtn.setText("Start Task");
-        tvStatus.setText("Task stopped");
-        tvStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.gray));
+        handler.removeCallbacks(smsRunnable);
+        progressBar.setIndeterminate(false);
+        startBtn.setText("▶ Start Task");
+        tvStatus.setText("⏸ Task paused");
+        tvStatus.setTextColor(getResources().getColor(R.color.gray));
     }
 
-    private void updateSentCount() {
-        tvSentCount.setText("Total Sent: " + sentCount);
-    }
-
-    // Permissions
     private void checkAndRequestSmsPermissions() {
         if (!hasSmsPermissions()) {
             ActivityCompat.requestPermissions(
@@ -158,10 +140,10 @@ public class TaskFragment extends Fragment {
     }
 
     private boolean hasSmsPermissions() {
-        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
-                && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.SEND_SMS)
+                == PackageManager.PERMISSION_GRANTED
+                && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_SMS)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
@@ -169,31 +151,13 @@ public class TaskFragment extends Fragment {
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         if (requestCode == SMS_PERMISSION_CODE) {
-            boolean allGranted = true;
-            for (int result : grantResults) {
-                if (result != PackageManager.PERMISSION_GRANTED) {
-                    allGranted = false;
-                    break;
-                }
-            }
-
-            Toast.makeText(
-                    requireContext(),
-                    allGranted ? "SMS permissions granted" : "Permissions denied. Cannot send SMS.",
-                    Toast.LENGTH_LONG
-            ).show();
-
-            if (allGranted && !isRunning) {
-                // Optionally auto-start if permissions were the blocker
-            }
+            boolean granted = true;
+            for (int res : grantResults)
+                if (res != PackageManager.PERMISSION_GRANTED) granted = false;
+            Toast.makeText(getContext(),
+                    granted ? "✅ SMS permissions granted" : "❌ Please allow all permissions",
+                    Toast.LENGTH_LONG).show();
         }
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        stopTask(); // Prevent leaks
     }
 }
