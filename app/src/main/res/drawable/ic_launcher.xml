@@ -1,0 +1,45 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="192dp"
+    android:height="192dp"
+    android:viewportWidth="192"
+    android:viewportHeight="192">
+
+    <gradient
+        android:type="linear"
+        android:startX="0"
+        android:startY="0"
+        android:endX="192"
+        android:endY="192"
+        android:startColor="#FF9800"
+        android:endColor="#FFD600"/>
+
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M0,0h192v192h-192z"/>
+
+    <!-- Rounded square background with orange-yellow gradient -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M24,24 h144 a24,24 0 0,1 24,24 v96 a24,24 0 0,1 -24,24 h-144 a24,24 0 0,1 -24,-24 v-96 a24,24 0 0,1 24,-24 z"
+        android:fillAlpha="0.95"/>
+
+    <!-- White chat bubble -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,68 h96 q12,0 12,12 v46 q0,12 -12,12 h-74 l-18,18 v-18 q-12,0 -12,-12 v-46 q0,-12 12,-12 z"/>
+
+    <!-- Orange text lines inside bubble -->
+    <rect
+        android:fillColor="#FF9800"
+        android:x="67" android:y="85" android:width="58" android:height="11" rx="4" />
+    <rect
+        android:fillColor="#FF9800"
+        android:x="67" android:y="108" android:width="31" android:height="11" rx="4" />
+
+    <!-- Orange circle for detail (like your real icon) -->
+    <circle
+        android:fillColor="#FF9800"
+        android:cx="134"
+        android:cy="122"
+        android:r="8" />
+</vector>
