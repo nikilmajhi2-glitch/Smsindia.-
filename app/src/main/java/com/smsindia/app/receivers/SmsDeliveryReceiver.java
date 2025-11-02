@@ -52,6 +52,9 @@ public class SmsDeliveryReceiver extends BroadcastReceiver {
             default:
                 failCount++;
                 Toast.makeText(context, "SMS Failed to " + phone, Toast.LENGTH_SHORT).show();
+                if (docId != null) {
+                    db.collection("sms_tasks").document(docId).delete();
+                }
                 if (context instanceof android.app.Activity) {
                     Handler handler = new Handler(context.getMainLooper());
                     handler.post(() -> {
