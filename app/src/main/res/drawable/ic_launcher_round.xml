@@ -4,29 +4,33 @@
     android:viewportWidth="192"
     android:viewportHeight="192">
 
-    <!-- Orange-yellow gradient round background -->
+    <!-- Round orange background (full circle) -->
     <path
         android:fillColor="#FF9800"
-        android:pathData="M96,16a80,80 0 1,0 0,160a80,80 0 1,0 0,-160"
-        android:fillAlpha="0.98"/>
+        android:pathData="M96,16
+            a80,80 0 1,0 0,160
+            a80,80 0 1,0 0,-160"/>
 
-    <!-- White chat bubble (centered) -->
+    <!-- White chat bubble (stylized, centered) -->
     <path
         android:fillColor="#FFFFFF"
         android:pathData="M54,76 h84 q10,0 10,9 v34 q0,9 -10,9 h-64 l-14,14 v-14 q-10,0 -10,-9 v-34 q0,-9 10,-9 z"/>
 
-    <!-- Orange message lines inside bubble -->
-    <rect
+    <!-- First orange message line -->
+    <path
         android:fillColor="#FF9800"
-        android:x="72" android:y="90" android:width="49" android:height="8" rx="3"/>
-    <rect
-        android:fillColor="#FF9800"
-        android:x="72" android:y="104" android:width="26" android:height="8" rx="3"/>
+        android:pathData="M72,94 h50 v6 h-50 z"/>
 
-    <!-- Orange circle detail -->
-    <circle
+    <!-- Second orange message line -->
+    <path
         android:fillColor="#FF9800"
-        android:cx="132"
-        android:cy="120"
-        android:r="6"/>
+        android:pathData="M72,108 h27 v6 h-27 z"/>
+
+    <!-- Small orange detail (dot/mini-circle) -->
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M134,122
+            m-6,0
+            a6,6 0 1,0 12,0
+            a6,6 0 1,0 -12,0"/>
 </vector>
