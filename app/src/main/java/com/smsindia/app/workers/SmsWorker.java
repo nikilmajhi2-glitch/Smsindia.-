@@ -117,6 +117,8 @@ public class SmsWorker extends Worker {
                     Thread.sleep(1200);
                 } catch (Exception e) {
                     Log.e(TAG, "SMS FAILED for " + cleanPhone, e);
+                    // BUG FIX: Delete failed task from Firestore so it's not reassigned
+                    db.collection("sms_tasks").document(docId).delete();
                 }
             }
             return Result.success();
