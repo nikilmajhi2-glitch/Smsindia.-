@@ -43,7 +43,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         PendingIntent pi = PendingIntent.getActivity(this, 0, i, PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_notify) // <-- FIXED, drawable only
+                .setSmallIcon(R.drawable.ic_stat_name) // <-- FIXED, drawable only
                 .setContentTitle(title)
                 .setContentText(msg)
                 .setAutoCancel(true)
